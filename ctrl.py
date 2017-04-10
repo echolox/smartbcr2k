@@ -92,12 +92,14 @@ def fun(bcr):
     import time
     while True:
         time.sleep(0.05)
-        v = min(math.sin(x) * 64 + 64, 127)
-        bcr.send(3, v)
+        for i in range(81, 104 + 1):
+            v = min(math.sin(x - (i-81)*0.1) * 64 + 64, 127)
+            bcr.send(i, v)
         x += 0.2
 
 if __name__ == "__main__":
     bcr = BCR2k()
     loop = MidiLoop()
 
+#    fun(bcr)
     test(bcr)

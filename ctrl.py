@@ -1,11 +1,12 @@
 import time
 import rtmidi
+from rtmidi.midiconstants import CONTROL_CHANGE
 
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
 DEFAULT_IN_PORT = 4
 DEFAULT_OUT_PORT = 5
-
+FULL = 127
 
 def select_port(port_type="input"):
     if port_type=="input":
@@ -28,6 +29,10 @@ class Device(object):
             self.output = self.input = None
             self.outname = self.inname = "Uninitialized"
 
+        self.blinken = []
+        self.blink_state = 0
+        self.last_blink = time.time()
+
     def init_callback(self):
         self.input.set_callback(self.input_callback) 
 
@@ -36,8 +41,18 @@ class Device(object):
         print("[%s] %r" % (self.name, message))
 
     def send(self, cc, value):
-        channel_byte = 0xB0 + self.channel - 1
+        channel_byte = CONTROL_CHANGE | (self.channel - 1)
         self.output.send_message([channel_byte, cc, value])
+
+    def update(self, time):
+        # Blinking routine
+        if (time - self.last_blink) > 0.5:
+            self.blink_state = 1 if self.blink_state==0 else 0 
+            for blink in self.blinken:
+                # @Feature: Instead of hardcoded FULL, use known value
+                #           to make this compatible with encoders
+                self.send(blink, self.blink_state * FULL)            
+            self.last_blink = time
 
 
 class MidiLoop(Device):
@@ -57,20 +72,19 @@ class BCR2k(Device):
         self.input,  self.inname  = open_midiinput (DEFAULT_IN_PORT)
         self.init_callback()
 
-bcr = BCR2k()
-loop = MidiLoop()
 
-cc_1 = [182, 2, 127]
-bcr.send(3, 0)
-bcr.send(4, 0)
-bcr.send(5, 0)
+def test(bcr):
+    bcr.send(3, 127)
+    bcr.send(4, 0)
+    bcr.send(5, 0)
 
+    bcr.blinken.append(65)
 
-try:
-    while True:
-        pass
-except KeyboardInterrupt:
-    print("Exiting...")
+    try:
+        while True:
+            bcr.update(time.time())
+    except KeyboardInterrupt:
+        print("Exiting...")
 
 def fun(bcr):
     x = 0
@@ -81,3 +95,9 @@ def fun(bcr):
         v = min(math.sin(x) * 64 + 64, 127)
         bcr.send(3, v)
         x += 0.2
+
+if __name__ == "__main__":
+    bcr = BCR2k()
+    loop = MidiLoop()
+
+    test(bcr)

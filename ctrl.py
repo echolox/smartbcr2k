@@ -66,6 +66,12 @@ bcr.send(4, 0)
 bcr.send(5, 0)
 
 
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    print("Exiting...")
+
 def fun(bcr):
     x = 0
     import math

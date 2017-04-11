@@ -5,8 +5,8 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
-DEFAULT_IN_PORT = 4
-DEFAULT_OUT_PORT = 5
+DEFAULT_IN_PORT = 5
+DEFAULT_OUT_PORT = 6
 FULL = 127
 
 
@@ -63,7 +63,7 @@ class Device(object):
             for blink in self.blinken:
                 # @Feature: Instead of hardcoded FULL, use known value
                 #           to make this compatible with encoders
-                self.send(blink, self.blink_state * FULL)            
+                self.send(blink, self.blink_state * self.controls[blink].maxval)
             self.last_blink = time
 
 
@@ -107,6 +107,7 @@ class Button(Control):
         self.callbacks = []
 
     def fire(self):
+        print("FIRE")
         for call in self.callbacks:
             call()
 
@@ -185,15 +186,6 @@ class BCR2k(Device):
 
 
 def test(bcr):
-    bcr.send(3, 127)
-    bcr.send(4, 0)
-    bcr.send(5, 0)
-
-    bcr.set_control(81, 127)
-    bcr.set_control(65, 127)
-
-#    bcr.blinken.append(65)
-
     try:
         while True:
             bcr.update(time.time())

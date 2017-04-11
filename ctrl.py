@@ -96,6 +96,13 @@ class Control(object):
         return self._value
 
 
+    def __repr__(self):
+        return "(%i) %i" % (self.ID, self.value)
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class Button(Control):
     
     def __init__(self, ID, parent=None, type=ButtonType.MOMENTARY, **kwargs):
@@ -107,7 +114,6 @@ class Button(Control):
         self.callbacks = []
 
     def fire(self):
-        print("FIRE")
         for call in self.callbacks:
             call()
 
@@ -167,9 +173,36 @@ class BCR2k(Device):
         self.input,  self.inname  = open_midiinput (DEFAULT_IN_PORT)
         self.init_callback()
 
-        self.controls[81] = Dial(81, self)
-        self.controls[65] = Button(65, self, type=ButtonType.MOMENTARY)
-        self.controls[66] = Button(66, self, type=ButtonType.TOGGLE)
+        self.macros = [[], [], [], []]
+        for i in range(1, 32 + 1):
+            self.controls[i] = Dial(i, self)
+            self.macros[(i-1) // 8].append(self.controls[i])
+
+        self.macro_buttons = [[], [], [], []]
+        for i in range(33, 64 + 1):
+            self.controls[i] = Button(i, self, type=ButtonType.MOMENTARY)
+            self.macro_buttons[(i-33) // 8].append(self.controls[i])
+
+        self.menu_buttons = [[],[]]
+        for i in range(65, 80 + 1):
+            self.controls[i] = Button(i, self, type=ButtonType.TOGGLE)
+            self.macro_buttons[(i-65) // 8].append(self.controls[i])
+
+        self.dialsc = [[] for _ in range(8)]
+        self.dialsr = [[] for _ in range(3)]
+        self.dials  = []
+        for i in range(81, 104 + 1):
+            self.controls[i] = Dial(i, self)
+            self.dials.append(self.controls[i])
+            z = i - 81
+            self.dialsc[z % 8].append(self.controls[i])
+            self.dialsr[z // 8].append(self.controls[i])
+
+        self.command_buttons = []
+        for i in range(104, 108 + 1):
+            self.controls[i] = Button(i, self, type=ButtonType.MOMENTARY)
+            self.command_buttons.append(self.controls[i])
+
 
     def set_control(self, ID, value):
         try:
@@ -180,7 +213,7 @@ class BCR2k(Device):
     def input_callback(self, event, date=None):
         message, deltatime = event
         _, ID, value = message
-        print("[%s!!] %r" % (self.name, message))
+#        print("[%s] %r" % (self.name, message))
 
         self.set_control(ID, value)
 

@@ -58,14 +58,19 @@ class Interface(Listener):
         self.views = [self.view]
 
         self.input.listeners.append(self)
+        self.output.listeners.append(self)
 
         self.add_target(Parameter("Testing", self.output, 57, is_button=True))
         self.view.map[90] = self.targets["Testing"]
 
-    def set_value(self, target, value):
+    def set_value(self, target, value, input_only=False):
         for ID, vtarget in self.view.map.items():
             if target == vtarget:
                 self.input.send(ID, value)
+
+        if not input_only:
+            target.act(value) 
+
 
     def switch_to_view(self, view):
         self.view = view
@@ -84,10 +89,14 @@ class Interface(Listener):
     def inform(self, sender, ID, value):
         try:
             target = self.view.map[ID]
-            target.act(value)
         except KeyError:
             print("No target configured for ID %i" % ID)
-            pass
+            return
+
+        if sender == self.input:
+            target.act(value)
+        elif sender == self.output:
+            self.set_value(target, value, input_only=True)
 
     def __repr__(self):
         return "Interface"

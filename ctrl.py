@@ -110,6 +110,25 @@ class Button(Control):
         for call in self.callbacks:
             call()
 
+    def on(self):
+        self._value = self.maxval
+        self.state = True
+        self.ignore = 1
+        self.parent.send(self.ID, self._value)
+
+    def off(self):
+        self._value = self.minval
+        self.state = False
+        self.ignore = 0
+        self.parent.send(self.ID, self._value)
+
+    def toggle(self):
+        if self.type == ButtonType.TOGGLE:
+            if self.state:
+                self.off()
+            else:
+                self.on()
+
     @Control.value.setter
     def value(self, value):
         if self.ignore > 0:

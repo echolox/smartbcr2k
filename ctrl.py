@@ -41,6 +41,8 @@ class Device(object):
 
         self.controls = {} 
 
+        self.listeners = []
+
         self.blinken = []
         self.blink_state = 0
         self.last_blink = time.time()
@@ -66,6 +68,11 @@ class Device(object):
                 self.send(blink, self.blink_state * self.controls[blink].maxval)
             self.last_blink = time
 
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.__repr__()
 
 class MidiLoop(Device):
 
@@ -92,7 +99,9 @@ class Control(object):
     def value(self, value):
         self._value = clip(self.minval, self.maxval, value)
         self.parent.send(self.ID, self._value)
-        # @Fix: Corrected value not accepted by hardware
+        # @Fix: Corrected value not accepted by hardware (dials)
+
+        self.parent.broadcast(self.ID, self._value)
         return self._value
 
 
@@ -122,12 +131,14 @@ class Button(Control):
         self.state = True
         self.ignore = 1
         self.parent.send(self.ID, self._value)
+        self.parent.broadcast(self.ID, self.state)
 
     def off(self):
         self._value = self.minval
         self.state = False
         self.ignore = 0
         self.parent.send(self.ID, self._value)
+        self.parent.broadcast(self.ID, self.state)
 
     def toggle(self):
         if self.type == ButtonType.TOGGLE:
@@ -144,7 +155,10 @@ class Button(Control):
             return
 
         if self.type == ButtonType.MOMENTARY:
-            Control.value.fset(self, value)
+            self._value = clip(self.minval, self.maxval, value)
+            self.state  = self._value == self.maxval
+            self.parent.send(self.ID, self._value)
+            self.parent.broadcast(self.ID, self.state)
             if value == self.maxval:
                 self.fire()
 
@@ -158,6 +172,7 @@ class Button(Control):
                 self.state = False
 
             self.parent.send(self.ID, self._value)
+            self.parent.broadcast(self.ID, self.state)
             return self._value
 
 
@@ -217,6 +232,15 @@ class BCR2k(Device):
 
         self.set_control(ID, value)
 
+    def broadcast(self, ID, value):
+        for listener in self.listeners:
+            listener.inform(self, ID, value)
+
+
+class Listener(object):
+
+    def inform(self, sender, ID, value):
+        print("%s says %i is now %i" % (sender, ID, value))
 
 def test(bcr):
     try:
@@ -240,5 +264,6 @@ if __name__ == "__main__":
     bcr = BCR2k()
     loop = MidiLoop()
 
+    bcr.listeners.append(Listener())
 #    fun(bcr)
     test(bcr)

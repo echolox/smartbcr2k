@@ -164,7 +164,6 @@ class Button(Control):
         # 1: Ignore
         # 0: Turn off
         if self.ignore > 0:
-            print("Ignored ", self.ignore)
             self.ignore -= 1
             self.parent.send(self.ID, self._value)
             return

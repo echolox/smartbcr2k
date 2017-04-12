@@ -23,7 +23,7 @@ class Target(object):
     device are mapped to targets.    
     """
 
-    trigger_vals = [range(128)]
+    trigger_vals = list(range(128))
 
     def __init__(self, name, parent):
         self.name = name
@@ -56,14 +56,14 @@ class SwitchView(Target):
     when triggered.
     """
 
-    trigger_vals = [127]
-
     def __init__(self, name, parent, view):
         super(SwitchView, self).__init__(name, parent)
         if type(view) == str:
             self.view_name = view
         else:
             self.view_name = view.name
+        # @TODO: Class member override?
+        self.trigger_vals = [127]
 
     def trigger(self, value):
         self.parent.switch_to_view(self.view_name)
@@ -105,7 +105,6 @@ class Parameter(Target):
         Forwards the value to the configured (output) Device with
         the transmitted value.
         """
-        print(">>", value)
         if self.is_button:
             if value:
                 value = 127
@@ -374,8 +373,6 @@ class Interface(Listener):
                 except AttributeError:
                     continue
                 self.input.reflect(ID, target.value)
-                if ID == 106:
-                    print(target.name, target.value, self.input.controls[ID].state)
                 untouched.remove(ID)
 
         for ID in untouched:
@@ -503,13 +500,14 @@ def test2(i):
     _, second_view = i.quick_view(105)
     i.quick_view(105, to_view=init_view, on_view=second_view)
 
+    # Dials
     i.quick_parameter(81)
     i.quick_parameter(82)
     t = i.quick_parameter(83)
     i.view.map_this(84, t)
-    i.set_value(t, 64)
-    i.quick_parameter(106)
 
+    # Command button momentary
+    i.quick_parameter(106)
 
 
     i.switch_to_view(second_view)
@@ -518,10 +516,11 @@ def test2(i):
     i.quick_parameter(82)
     t = i.quick_parameter(83)
     i.view.map_this(84, t)
-    i.quick_parameter(106)
 
-    # TODO: This is indirect configuration
+    # Command button toggle
+    i.quick_parameter(106)
     second_view.configuration[106]["toggle"] = True
+    # TODO: This is indirect configuration
 
 
     i.switch_to_view(init_view)

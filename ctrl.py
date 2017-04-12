@@ -204,12 +204,12 @@ class Interface(Listener):
             return
         self.targets[target.name] = target
 
-    def quick_parameter(self, ID):
+    def quick_parameter(self, ID, is_button=False):
         """
         Quickly map the provided ID to a Parameter by creating a new
         Parameter target using the class's own maker
         """
-        t = self.maker.make(is_button=False)
+        t = self.maker.make(is_button=is_button)
         self.add_target(t)
         self.view.map_this(ID, t)
         return t
@@ -263,6 +263,17 @@ def test(i):
     i.view.map_this(85, t)
 
     i.set_value(t, 127)
+
+    # @Fix: Multiple buttons mapped to the same target
+    #       don't behave in sync yet
+    i.quick_parameter(65, is_button=True)
+    i.quick_parameter(66, is_button=True)
+    i.quick_parameter(67, is_button=True)
+    t = i.quick_parameter(68, is_button=True)
+    i.view.map_this(69, t)
+
+    i.set_value(t, 127)
+
     while True:
         bcr.update(time.time())
 

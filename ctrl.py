@@ -168,9 +168,7 @@ class Interface(Listener):
         That's what target.act() is for.
         """
         # Inform input controls mapped to this target about the change
-        for ID in self.view.find_IDs_by_target(target):
-            if not exclude_IDs or ID not in exclude_IDs:
-                self.input.send(ID, value)
+        self.reflect_value(target, value)
 
         # Prevent feedback loop, for example if the source of the
         # new value was the output device itself
@@ -180,6 +178,17 @@ class Interface(Listener):
             target.value = value
         else:
             target.act(value) 
+
+    def reflect_value(self, target, value, exclude_IDs=None):
+        """
+        Inform the input device of a value change, possibly excluding
+        certain IDs. Only controls mapped to the given target will
+        be updated.
+        """
+        for ID in self.view.find_IDs_by_target(target):
+            if not exclude_IDs or ID not in exclude_IDs:
+                self.input.send(ID, value)
+
  
 
     def switch_to_view(self, view):
@@ -235,7 +244,7 @@ class Interface(Listener):
                 # Multiple input controls might be mapped to this
                 # so let's call set_value on the input_only but exclude the
                 # ID that issued the value change
-                self.set_value(target, value, input_only=True, exclude_IDs=[ID])
+                self.reflect_value(target, value, exclude_IDs=[ID])
             elif sender == self.output:
                 # Just reflect the value in both target and on the input device
                 self.set_value(target, value, input_only=True)
@@ -251,6 +260,10 @@ class Interface(Listener):
 
 
 def test(i):
+    t = i.quick_parameter(1)
+    for macro in i.input.macros[0][1:]:
+        i.view.map_this(macro.ID, t)
+
     i.quick_parameter(81)
     i.quick_parameter(82)
     i.quick_parameter(83)

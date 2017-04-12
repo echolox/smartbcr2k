@@ -1,8 +1,9 @@
 import time
 import rtmidi
+import shelve
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from devices import BCR2k, MidiLoop, Listener
 
@@ -21,6 +22,10 @@ class Target(object):
         """
         raise NotImplemented
 
+    def serialize(self):
+        return {"name": self.name,
+                "type": type(self).__name__}
+
 
 class SwitchView(Target):
     """
@@ -35,6 +40,11 @@ class SwitchView(Target):
     def trigger(self, value):
         self.interface.switch_to_view(self.view)
 
+    def serialize(self):
+        s = super(SwitchView, self).serialize() 
+        s["view"] = self.view.name
+        return s
+
 
 class Parameter(Target):
     """
@@ -42,12 +52,19 @@ class Parameter(Target):
     Control Change midi signal on the configured (output) device.
     Button values are (for now) hardcoded to 0 for Off and 127 for On.
     """
-    def __init__(self, name, device, cc, initial=0, is_button=False):
+    def __init__(self, name, parent, cc, initial=0, is_button=False):
         self.name = name
-        self.device = device
+        self.parent = parent
         self.cc = cc
         self.value = initial
         self.is_button = is_button
+
+    def serialize(self):
+        s = super(Parameter, self).serialize() 
+        s["cc"] = self.cc
+        s["value"] = self.value
+        s["is_button"] = self.is_button
+        return s
 
     def trigger(self, value):
         """
@@ -60,7 +77,8 @@ class Parameter(Target):
             else:
                 value = 0
         self.value = value
-        self.device.send(self.cc, self.value)
+        # @Robustness: This is kinda wonky
+        self.parent.output.send(self.cc, self.value)
 
 
 TargetsWithValues = [Parameter,
@@ -75,8 +93,8 @@ class ParameterMaker(object):
     Produces Targets of the type Parameter. Everytime a new target is
     requested it assigns that target the next available CC.
     """
-    def __init__(self, output_device, channel, prefix="CC", first_cc=1, expand=True):
-        self.device = output_device
+    def __init__(self, interface, channel, prefix="CC", first_cc=1, expand=True):
+        self.interface = interface
         self.channel = channel
         self.next_cc = first_cc
         self.prefix = prefix
@@ -89,7 +107,7 @@ class ParameterMaker(object):
             raise Exhausted
 
         name = "%s_%i" % (self.prefix, self.next_cc)
-        t = Parameter(name, self.device, self.next_cc, is_button=is_button)        
+        t = Parameter(name, self.interface, self.next_cc, is_button=is_button)        
         self.next_cc += 1
         if self.next_cc > 128:
             if self.expand and self.channel < 16:
@@ -202,8 +220,31 @@ class Interface(Listener):
         self.input.listeners.append(self)
         self.output.listeners.append(self)
 
-        self.parameter_maker = ParameterMaker(self.output, 1)
+        self.parameter_maker = ParameterMaker(self, 1)
         self.view_maker      = ViewMaker(self)
+
+    def make_profile(self):
+        p = {"input": self.input.name,
+             "output": self.output.name,
+             "next_cc": self.parameter_maker.next_cc,
+             "next_view_index": self.view_maker.next_index,
+             "active_view_index": self.views.index(self.view),
+             "views": []}
+        
+        for view in self.views:
+            v = {"name": view.name,
+                 "configuration": {},
+                 "map": []} 
+
+            # @TODO: Configuration
+
+            m = v["map"]
+            for ID, targets in view.map.items():
+                for target in targets:
+                    m.append(target.serialize())
+            p["views"].append(v)
+
+        return p
 
 
     def set_value(self, target, value, input_only=False, exclude_IDs=None):
@@ -265,6 +306,7 @@ class Interface(Listener):
         that view will be added to the total list of targets.
         """
         print("[%s] Switching to %s" % (self, view))
+        # @TODO: Switch configurations out
         self.view = view
         if view not in self.views:
             self.views.append(view)
@@ -338,11 +380,16 @@ class Interface(Listener):
     def __str__(self):
         return self.__repr__()
 
-
 ##################################
 
 
 def test(i):
+
+    while True:
+        bcr.update(time.time())
+
+
+def test2(i):
     t = i.quick_parameter(1)
     for macro in i.input.macros[0][1:]:
         i.view.map_this(macro.ID, t)
@@ -355,6 +402,7 @@ def test(i):
     i.quick_parameter(82)
     t = i.quick_parameter(83)
     i.view.map_this(84, t)
+    i.set_value(t, 64)
 
     i.switch_to_view(second_view)
 
@@ -364,6 +412,12 @@ def test(i):
     i.view.map_this(84, t)
 
     i.switch_to_view(init_view)
+
+    p = i.make_profile()
+
+    import json
+    with open("default.bcr", "w") as outfile:
+        json.dump(p, outfile)
 
     while True:
         bcr.update(time.time())
@@ -387,4 +441,4 @@ if __name__ == "__main__":
     interface = Interface(bcr, loop)
 
 #    fun(bcr)
-    test(interface)
+    test2(interface)

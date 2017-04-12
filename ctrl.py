@@ -6,38 +6,71 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 from devices import BCR2k, MidiLoop
 
 class Listener(object):
-
+    """
+    Can be added to a device's listeners list
+    """
     def inform(self, sender, ID, value):
+        """
+        Override this function.
+        @sender: A Device
+        @ID:     ID of the device's control that sent the...
+        @value:  Transmitted value of the control
+        """
         print("(%s) %s says %i is now %i" % (self, sender, ID, value))
 
 
 class Target(object):
-    
+    """
+    A mapping target. In the Interface, the IDs of the input
+    device are mapped to targets.    """
     def __init__(self, name):
         self.name = name
 
     def act(self, value):
+        """
+        Their act method is then called
+        with the value transmitted by the Control.
+        """
         raise NotImplemented
 
 class Parameter(Target):
-
+    """
+    A type of target that simply maps the incoming value to a
+    Control Change midi signal on the configured (output) device.
+    Button values are (for now) hardcoded to 0 for Off and 127 for On.
+    """
     def __init__(self, name, device, cc, initial=0, is_button=False):
         self.name = name
         self.device = device
         self.cc = cc
-        self.initial = initial
+        self.value = initial
         self.is_button = is_button
 
     def act(self, value):
+        """
+        Forwards the value to the configured (output) Device with
+        the transmitted value.
+        """
         if self.is_button:
             if value:
                 value = 127
             else:
                 value = 0
-        self.device.send(self.cc, value)
+        self.value = value
+        self.device.send(self.cc, self.value)
+
 
 class View(object):
-
+    """
+    A View is made up of two components:
+    - A configuration: How the buttons and dials on the input device should behave
+    - A Map: Connects the input device's controls (by their ID) to Targets like
+             Parameters, Commands etc. from which their current values can also
+             be infered.
+    When activating a View, the input Device needs to be reconfigured and the
+    values of each mapped target transmitted to that device for it to show those
+    values on the hardware.
+    """
     def __init__(self):
         # Map IDs of a device's controls to configurations like
         # - Buttons: toggle vs momentary
@@ -49,8 +82,25 @@ class View(object):
     
 
 class Interface(Listener):
+    """
+    The Interface connects an input device with an output device by tunneling
+    transmitted values from the input through its currently active View.
+    This view can transform CC messages, issue commands like switching to a
+    different View or other meta functions. For a simple mapped CC parameter,
+    the - possibly modified - value is sent to the Interface's output device.
 
+    Changes communicated from the output device (e.g. automation in Ableton Live
+    needs to be reflected on the hardware) is sent back to the input device,
+    depending on if any of its controls are currently mapped to the changed Parameter.
+    """
     def __init__(self, devin, devout, initview=None):
+        """
+        Initialize the Interface with the provided input and output device
+        and a View. If no View is provided and empty View will be produced.
+
+        The Interface attaches itself as a listener to both input and output
+        devices.
+        """
         self.input = devin
         self.output = devout
         self.targets = {}
@@ -60,19 +110,44 @@ class Interface(Listener):
         self.input.listeners.append(self)
         self.output.listeners.append(self)
 
-        self.add_target(Parameter("Testing", self.output, 57, is_button=True))
+        # TESTING MAPPING
+        self.add_target(Parameter("Testing", self.output, 57, is_button=False))
         self.view.map[90] = self.targets["Testing"]
 
     def set_value(self, target, value, input_only=False):
+        """
+        Sets the value of a Target. The value is typically communicated
+        to both input and output device. This makes it possible to automate
+        values from within the interface and having that reflect on both
+        the input device (hardware) and the output device (DAW).
+
+        We a value change was communicated from the output device (e.g.
+        DAW automation) we only want to inform the input device about the
+        new value. In that case, use the input_only flag. If you don't, a
+        feedback loop might occur.
+        """
+        # Find a Control on the input device that is mapped to the
+        # provided target and set it to the current value
         for ID, vtarget in self.view.map.items():
             if target == vtarget:
                 self.input.send(ID, value)
 
-        if not input_only:
+        # Prevent feedback loop, for example if the source of the
+        # new value was the output device itself
+        if input_only:
+            # We still need to reflect the value change in the target
+            # but without performing the associated action
+            target.value = value
+        else:
             target.act(value) 
-
+ 
 
     def switch_to_view(self, view):
+        """
+        Switches to the provided view. If this is a new view it will
+        be added to the Interface's view catalog and all targets of
+        that view will be added to the total list of targets.
+        """
         self.view = view
         if view not in self.views:
             self.views.append(view)
@@ -80,13 +155,21 @@ class Interface(Listener):
                 self.add_target(target)
 
     def add_target(self, target):
+        """
+        Add a configured target. This method checks for duplicates and
+        ignores them if detected.
+        """
         if target.name in self.targets:
             print("Target with same name already exists! Ignoring...")
             return
-
         self.targets[target.name] = target
 
     def inform(self, sender, ID, value):
+        """
+        Callback method whenever the input or output devices produce
+        messages to consume (input -> hardware -> controls, output ->
+        daw -> automation).
+        """
         try:
             target = self.view.map[ID]
         except KeyError:
@@ -94,8 +177,12 @@ class Interface(Listener):
             return
 
         if sender == self.input:
+            # Perform the action of the target. This might send a
+            # message to the output device but could also be a meta
+            # command like switching views
             target.act(value)
         elif sender == self.output:
+            # Just reflect the value in both target and on the input device
             self.set_value(target, value, input_only=True)
 
     def __repr__(self):
@@ -105,7 +192,7 @@ class Interface(Listener):
         return self.__repr__()
 
 def test(i):
-    i.set_value(i.targets["Testing"], 127)
+    i.set_value(i.targets["Testing"], 127, input_only=True)
     try:
         while True:
             bcr.update(time.time())

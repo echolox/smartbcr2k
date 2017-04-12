@@ -127,10 +127,6 @@ class Button(Control):
 
         self.callbacks = []
 
-    def fire(self):
-        for call in self.callbacks:
-            call()
-
     def on(self):
         self._value = self.maxval
         self.state = True
@@ -154,6 +150,16 @@ class Button(Control):
 
     @Control.value.setter
     def value(self, value):
+        """
+        React to value changes on the hardware. If the button configured
+        to toggle, we need to reflect that on the hardware where every
+        button is actually momentary.
+        """
+        # When in a toggle cycle, we need to ignore certain presses:
+        # 1: Turn on
+        # 0: Ignore
+        # 1: Ignore
+        # 0: Turn off
         if self.ignore > 0:
             self.ignore -= 1
             self.parent.send(self.ID, self._value)
@@ -162,8 +168,6 @@ class Button(Control):
         if self.type == ButtonType.MOMENTARY:
             self.reflect(value)
             self.parent.broadcast(self.ID, self.state)
-            if self._value == self.maxval:
-                self.fire()
 
         elif self.type == ButtonType.TOGGLE:
             if value == self.maxval and not self.state:
@@ -179,6 +183,9 @@ class Button(Control):
             return self._value
     
     def reflect(self, value):
+        """
+        Reflects the value (True, False, 0-127) back to the hardware
+        """
         if type(value) == bool:
             self.state  = value
             self._value = FULL if value else 0
@@ -191,7 +198,6 @@ class Button(Control):
                 self.ignore = 1
             else:
                 self.ignore = 0
-
         self.parent.send(self.ID, self._value)
 
 

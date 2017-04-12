@@ -264,7 +264,7 @@ class Interface(Listener):
         be added to the Interface's view catalog and all targets of
         that view will be added to the total list of targets.
         """
-        print("Switching to %s" % view)
+        print("[%s] Switching to %s" % (self, view))
         self.view = view
         if view not in self.views:
             self.views.append(view)

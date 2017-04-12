@@ -150,7 +150,7 @@ class ViewMaker(object):
     def make(self, view=None):
         name = "%s_%i" % (self.prefix, self.next_index)
         if not view:
-            view = View(name=name)
+            view = View(self.interface.input, name=name)
         t = SwitchView(name, self.interface, view)
         self.next_index += 1
         return t, view
@@ -167,12 +167,17 @@ class View(object):
     values of each mapped target transmitted to that device for it to show those
     values on the hardware.
     """
-    def __init__(self, name="Unnamed View"):
+    def __init__(self, device, name="Unnamed View"):
         self.name = name
-        # Map IDs of a device's controls to configurations like
+        # Map IDs of a device's controls to configurations:
         # - Buttons: toggle vs momentary
-        # - Maxvals / Minvals
         self.configuration = {}
+        for ID, control in device.controls.items():
+            conf = {}
+            for attr in control.configurable:
+                conf[attr] = getattr(control, attr)
+            self.configuration[ID] = conf
+
 
         # Map IDs of a device's controls to Parameters
         self.map = defaultdict(list)
@@ -238,7 +243,7 @@ class Interface(Listener):
         self.input = devin
         self.output = devout
         self.targets = {}
-        self.view = initview if initview else View("Init")
+        self.view = initview if initview else View(self.input, "Init")
         self.views = [self.view]
 
         self.input.listeners.append(self)
@@ -285,7 +290,7 @@ class Interface(Listener):
         self.view = None
         get_class = lambda x: globals()[x]
         for v in p["views"]:
-            view = View(v["name"])
+            view = View(self.input, v["name"])
             self.views.append(view)
             for t in v["map"]:
                 if t["name"] in self.targets:

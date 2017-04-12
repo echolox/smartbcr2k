@@ -87,6 +87,8 @@ class MidiLoop(Device):
 
 class Control(object):
 
+    configurable = []
+
     def __init__(self, ID, parent=None, minval=0, maxval=127):
         self.ID = ID
         self.parent = parent
@@ -107,8 +109,11 @@ class Control(object):
     def reflect(self, value):
         self._value = clip(self.minval, self.maxval, value)
         self.parent.send(self.ID, self._value)
-        # @Fix: Corrected value not accepted by hardware (dials)
 
+    def configure(self, conf):
+        assert(conf.keys() == self.configurable)
+        for k, v in conf.items():
+            setattr(self, k, v)
 
     def __repr__(self):
         return "(%i) %i" % (self.ID, self.value)
@@ -118,6 +123,8 @@ class Control(object):
 
 
 class Button(Control):
+
+    configurable = ["type"]
     
     def __init__(self, ID, parent=None, type=ButtonType.MOMENTARY, **kwargs):
         super().__init__(ID, parent, **kwargs)

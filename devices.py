@@ -249,11 +249,9 @@ class BCR2k(Device):
         as a broadcast from the device.
         """
         try:
-            print(ID, value)
             self.controls[ID].reflect(value)
         except KeyError:
             print("Control with ID %s not found" % ID)
-
 
     def input_callback(self, event, date=None):
         message, deltatime = event

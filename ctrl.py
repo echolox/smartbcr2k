@@ -190,8 +190,6 @@ class Interface(Listener):
                 print(ID, value)
                 self.input.reflect(ID, value)
 
- 
-
     def switch_to_view(self, view):
         """
         Switches to the provided view. If this is a new view it will
@@ -243,7 +241,7 @@ class Interface(Listener):
                 # command like switching views
                 target.act(value)
                 # Multiple input controls might be mapped to this
-                # so let's call set_value on the input_only but exclude the
+                # so let's reflect on the input device but exclude the
                 # ID that issued the value change
                 self.reflect_value(target, value, exclude_IDs=[ID])
             elif sender == self.output:

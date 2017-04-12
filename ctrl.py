@@ -7,6 +7,9 @@ from collections import defaultdict, namedtuple
 
 from devices import BCR2k, MidiLoop, Listener
 
+def keys_to_ints(j):
+    return {int(k): v for k, v in j.items()}
+
 
 class Target(object):
     """
@@ -263,10 +266,8 @@ class Interface(Listener):
         
         for view in self.views:
             v = {"name": view.name,
-                 "configuration": {},
+                 "configuration": view.configuration,
                  "map": []} 
-
-            # @TODO: Configuration
 
             m = v["map"]
             for ID, targets in view.map.items():
@@ -278,7 +279,6 @@ class Interface(Listener):
 
     def load_profile(self, p):
         print("Loading profile %s..." % p["name"])
-        # Set own members
         # @TODO: Connect to correct input/output by name
 
         # Set next_ values
@@ -291,6 +291,7 @@ class Interface(Listener):
         get_class = lambda x: globals()[x]
         for v in p["views"]:
             view = View(self.input, v["name"])
+            view.configuration = keys_to_ints(v["configuration"])
             self.views.append(view)
             for t in v["map"]:
                 if t["name"] in self.targets:
@@ -360,7 +361,6 @@ class Interface(Listener):
                 except AttributeError:
                     pass
 
-
     def switch_to_view(self, view):
         """
         Switches to the provided view. If this is a new view it will
@@ -375,9 +375,14 @@ class Interface(Listener):
             view = view[0]
 
         self.view = view
-        print("[%s] Switched to %s" % (self, view))
 
-        # @TODO: Switch configurations out
+        for ID, control in self.input.controls.items():
+            try:
+                control.configure(view.configuration[ID])
+            except KeyError:
+                pass
+
+        print("[%s] Switched to %s" % (self, view))
         if view not in self.views:
             self.views.append(view)
             for ID, targets in view.map.items():
@@ -480,12 +485,18 @@ def test2(i):
     i.view.map_this(84, t)
     i.set_value(t, 64)
 
+
+
     i.switch_to_view(second_view)
 
     i.quick_parameter(81)
     i.quick_parameter(82)
     t = i.quick_parameter(83)
     i.view.map_this(84, t)
+
+    # TODO: This is indirect configuration
+    second_view.configuration[106]["toggle"] = True
+
 
     i.switch_to_view(init_view)
 

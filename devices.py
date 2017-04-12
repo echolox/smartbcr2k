@@ -13,10 +13,6 @@ list_input_ports()
 list_output_ports()
 
 
-class ButtonType(Enum):
-    MOMENTARY = 1
-    TOGGLE    = 2
-
 def clip(minval, maxval, value):
     return sorted((minval, value, maxval))[1]
 
@@ -111,7 +107,7 @@ class Control(object):
         self.parent.send(self.ID, self._value)
 
     def configure(self, conf):
-        assert(conf.keys() == self.configurable)
+        assert(list(conf.keys()) == self.configurable)
         for k, v in conf.items():
             setattr(self, k, v)
 
@@ -124,11 +120,11 @@ class Control(object):
 
 class Button(Control):
 
-    configurable = ["type"]
+    configurable = ["toggle"]
     
-    def __init__(self, ID, parent=None, type=ButtonType.MOMENTARY, **kwargs):
+    def __init__(self, ID, parent=None, toggle=True, **kwargs):
         super().__init__(ID, parent, **kwargs)
-        self.type = type
+        self.toggle = toggle
         self.state = False
         self.ignore = 0
 
@@ -149,7 +145,7 @@ class Button(Control):
         self.parent.broadcast(self.ID, self.state)
 
     def toggle(self):
-        if self.type == ButtonType.TOGGLE:
+        if self.toggle:
             if self.state:
                 self.off()
             else:
@@ -172,11 +168,8 @@ class Button(Control):
             self.parent.send(self.ID, self._value)
             return
 
-        if self.type == ButtonType.MOMENTARY:
-            self.reflect(value)
-            self.parent.broadcast(self.ID, self.state)
 
-        elif self.type == ButtonType.TOGGLE:
+        if self.toggle:
             if value == self.maxval and not self.state:
                 self._value = self.maxval
                 self.state = True
@@ -188,6 +181,10 @@ class Button(Control):
             self.parent.send(self.ID, self._value)
             self.parent.broadcast(self.ID, self.state)
             return self._value
+        else:
+            self.reflect(value)
+            self.parent.broadcast(self.ID, self.state)
+            return value
     
     def reflect(self, value):
         """
@@ -200,7 +197,7 @@ class Button(Control):
             self._value = clip(self.minval, self.maxval, value)
             self.state  = self._value == self.maxval
 
-        if self.type == ButtonType.TOGGLE:
+        if self.toggle:
             if self.state:
                 self.ignore = 1
             else:
@@ -226,12 +223,12 @@ class BCR2k(Device):
 
         self.macro_buttons = [[], [], [], []]
         for i in range(33, 64 + 1):
-            self.controls[i] = Button(i, self, type=ButtonType.MOMENTARY)
+            self.controls[i] = Button(i, self, toggle=False)
             self.macro_buttons[(i-33) // 8].append(self.controls[i])
 
         self.menu_buttons = [[],[]]
         for i in range(65, 80 + 1):
-            self.controls[i] = Button(i, self, type=ButtonType.TOGGLE)
+            self.controls[i] = Button(i, self, toggle=True)
             self.macro_buttons[(i-65) // 8].append(self.controls[i])
 
         self.dialsc = [[] for _ in range(8)]
@@ -246,7 +243,7 @@ class BCR2k(Device):
 
         self.command_buttons = []
         for i in range(104, 108 + 1):
-            self.controls[i] = Button(i, self, type=ButtonType.MOMENTARY)
+            self.controls[i] = Button(i, self, toggle=False)
             self.command_buttons.append(self.controls[i])
 
 

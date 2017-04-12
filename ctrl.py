@@ -92,6 +92,7 @@ class Parameter(Target):
         Forwards the value to the configured (output) Device with
         the transmitted value.
         """
+        print(">>", value)
         if self.is_button:
             if value:
                 value = 127
@@ -351,7 +352,7 @@ class Interface(Listener):
         """
         Based on the current view, reflect all values to the input device
         """
-        # @FIX: Unmapped controls retain value from previous view
+        untouched = set(self.input.controls.keys())
         for ID, targets in self.view.map.items():
             for target in targets:
                 try:
@@ -359,8 +360,13 @@ class Interface(Listener):
                     getattr(target, "value")
                     # If so, no exception was triggered
                     self.input.reflect(ID, target.value)
+                    untouched.remove(ID)
                 except AttributeError:
                     pass
+
+        for ID in untouched:
+            self.input.reflect(ID, 0)
+            
 
     def switch_to_view(self, view):
         """
@@ -485,6 +491,7 @@ def test2(i):
     t = i.quick_parameter(83)
     i.view.map_this(84, t)
     i.set_value(t, 64)
+    i.quick_parameter(106)
 
 
 
@@ -494,6 +501,7 @@ def test2(i):
     i.quick_parameter(82)
     t = i.quick_parameter(83)
     i.view.map_this(84, t)
+    i.quick_parameter(106)
 
     # TODO: This is indirect configuration
     second_view.configuration[106]["toggle"] = True
@@ -503,7 +511,6 @@ def test2(i):
 
     p = i.make_profile()
 
-    print(p)
     import json
     with open("default.bcr", "w") as outfile:
         json.dump(p, outfile)
@@ -530,4 +537,4 @@ if __name__ == "__main__":
     interface = Interface(bcr, loop)
 
 #    fun(bcr)
-    test(interface)
+    test2(interface)

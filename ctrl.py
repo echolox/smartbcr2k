@@ -101,7 +101,24 @@ class View(object):
 
         # Map IDs of a device's controls to Parameters
         self.map = defaultdict(list)
-    
+
+    def find_IDs_by_target(self, vtarget):
+        """
+        Make a list of IDs on this view mapped to the provided target.
+        """
+        IDs = []
+        for ID, vtargets in self.map.items():
+            for target in vtargets:
+                if target == vtarget:
+                    IDs.append(ID)
+        return IDs
+
+    def map_this(self, ID, t):
+        """
+        Add a mapping from the ID to the target
+        """
+        self.map[ID].append(t)
+
 
 class Interface(Listener):
     """
@@ -135,7 +152,7 @@ class Interface(Listener):
         self.maker = ParameterMaker(self.output, 1)
 
 
-    def set_value(self, target, value, input_only=False):
+    def set_value(self, target, value, input_only=False, exclude_IDs=None):
         """
         Sets the value of a Target. The value is typically communicated
         to both input and output device. This makes it possible to automate
@@ -146,13 +163,14 @@ class Interface(Listener):
         DAW automation) we only want to inform the input device about the
         new value. In that case, use the input_only flag. If you don't, a
         feedback loop might occur.
+
+        Should not be called because a value directly on the input changed.
+        That's what target.act() is for.
         """
-        # Find a Control on the input device that is mapped to the
-        # provided target and set it to the current value
-        for ID, vtargets in self.view.map.items():
-            for target in vtargets:
-                if target == vtarget:
-                    self.input.send(ID, value)
+        # Inform input controls mapped to this target about the change
+        for ID in self.view.find_IDs_by_target(target):
+            if not exclude_IDs or ID not in exclude_IDs:
+                self.input.send(ID, value)
 
         # Prevent feedback loop, for example if the source of the
         # new value was the output device itself
@@ -193,7 +211,8 @@ class Interface(Listener):
         """
         t = self.maker.make(is_button=False)
         self.add_target(t)
-        self.view.map[ID].append(t)
+        self.view.map_this(ID, t)
+        return t
 
     def inform(self, sender, ID, value):
         """
@@ -213,6 +232,10 @@ class Interface(Listener):
                 # message to the output device but could also be a meta
                 # command like switching views
                 target.act(value)
+                # Multiple input controls might be mapped to this
+                # so let's call set_value on the input_only but exclude the
+                # ID that issued the value change
+                self.set_value(target, value, input_only=True, exclude_IDs=[ID])
             elif sender == self.output:
                 # Just reflect the value in both target and on the input device
                 self.set_value(target, value, input_only=True)
@@ -236,7 +259,10 @@ def test(i):
     i.quick_parameter(81)
     i.quick_parameter(82)
     i.quick_parameter(83)
-    i.quick_parameter(84)
+    t = i.quick_parameter(84)
+    i.view.map_this(85, t)
+
+    i.set_value(t, 127)
     while True:
         bcr.update(time.time())
 

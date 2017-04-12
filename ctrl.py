@@ -14,12 +14,26 @@ class Target(object):
     def __init__(self, name):
         self.name = name
 
-    def act(self, value):
+    def trigger(self, value):
         """
-        Their act method is then called
+        Their trigger method is then called
         with the value transmitted by the Control.
         """
         raise NotImplemented
+
+
+class SwitchView(Target):
+    """
+    Issues the command to switch to a preconfigured View
+    when triggered.
+    """
+    def __init__(self, name, interface, view):
+        self.name = name
+        self.interface = interface
+        self.view = view
+
+    def trigger(self, value):
+        self.interface.switch_to_view(self.view)
 
 
 class Parameter(Target):
@@ -35,7 +49,7 @@ class Parameter(Target):
         self.value = initial
         self.is_button = is_button
 
-    def act(self, value):
+    def trigger(self, value):
         """
         Forwards the value to the configured (output) Device with
         the transmitted value.
@@ -47,6 +61,10 @@ class Parameter(Target):
                 value = 0
         self.value = value
         self.device.send(self.cc, self.value)
+
+
+TargetsWithValues = [Parameter,
+                    ]
 
 
 class Exhausted(Exception):
@@ -81,6 +99,21 @@ class ParameterMaker(object):
                 self.exhausted = True
         return t
 
+class ViewMaker(object):
+
+    def __init__(self, interface, prefix="V"):
+        self.interface = interface
+        self.next_index = 1
+        self.prefix = prefix
+
+    def make(self, view=None):
+        name = "%s_%i" % (self.prefix, self.next_index)
+        if not view:
+            view = View(name=name)
+        t = SwitchView(name, self.interface, view)
+        self.next_index += 1
+        return t, view
+
 
 class View(object):
     """
@@ -89,11 +122,12 @@ class View(object):
     - A Map: Connects the input device's controls (by their ID) to Targets like
              Parameters, Commands etc. from which their current values can also
              be infered.
-    When activating a View, the input Device needs to be reconfigured and the
+    When triggerivating a View, the input Device needs to be reconfigured and the
     values of each mapped target transmitted to that device for it to show those
     values on the hardware.
     """
-    def __init__(self):
+    def __init__(self, name="Unnamed View"):
+        self.name = name
         # Map IDs of a device's controls to configurations like
         # - Buttons: toggle vs momentary
         # - Maxvals / Minvals
@@ -119,11 +153,30 @@ class View(object):
         """
         self.map[ID].append(t)
 
+    def unmap(self, ID):
+        """
+        Remove all mappings of the provided ID
+        """
+        self.map[ID] = []
+
+    def unmap_target(self, target):
+        """
+        Remove all mappings to the provided target
+        """
+        for targets in self.map.values():
+            if target in targets: targets.remove(target) 
+
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class Interface(Listener):
     """
     The Interface connects an input device with an output device by tunneling
-    transmitted values from the input through its currently active View.
+    transmitted values from the input through its currently triggerive View.
     This view can transform CC messages, issue commands like switching to a
     different View or other meta functions. For a simple mapped CC parameter,
     the - possibly modified - value is sent to the Interface's output device.
@@ -143,13 +196,14 @@ class Interface(Listener):
         self.input = devin
         self.output = devout
         self.targets = {}
-        self.view = initview if initview else View()
+        self.view = initview if initview else View("Init")
         self.views = [self.view]
 
         self.input.listeners.append(self)
         self.output.listeners.append(self)
 
-        self.maker = ParameterMaker(self.output, 1)
+        self.parameter_maker = ParameterMaker(self.output, 1)
+        self.view_maker      = ViewMaker(self)
 
 
     def set_value(self, target, value, input_only=False, exclude_IDs=None):
@@ -165,7 +219,7 @@ class Interface(Listener):
         feedback loop might occur.
 
         Should not be called because a value directly on the input changed.
-        That's what target.act() is for.
+        That's what target.trigger() is for.
         """
         # Inform input controls mapped to this target about the change
         self.reflect_value(target, value)
@@ -174,10 +228,10 @@ class Interface(Listener):
         # new value was the output device itself
         if input_only:
             # We still need to reflect the value change in the target
-            # but without performing the associated action
+            # but without performing the associated triggerion
             target.value = value
         else:
-            target.act(value) 
+            target.trigger(value) 
 
     def reflect_value(self, target, value, exclude_IDs=None):
         """
@@ -189,17 +243,35 @@ class Interface(Listener):
             if not exclude_IDs or ID not in exclude_IDs:
                 self.input.reflect(ID, value)
 
+
+    def reflect_all(self):
+        """
+        Based on the current view, reflect all values to the input device
+        """
+        for ID, targets in self.view.map.items():
+            for target in targets:
+                try:
+                    # Does the target have a value type?
+                    getattr(target, "value")
+                    # If so, no exception was triggered
+                    self.input.reflect(ID, target.value)
+                except AttributeError:
+                    pass
+
     def switch_to_view(self, view):
         """
         Switches to the provided view. If this is a new view it will
         be added to the Interface's view catalog and all targets of
         that view will be added to the total list of targets.
         """
+        print("Switching to %s" % view)
         self.view = view
         if view not in self.views:
             self.views.append(view)
-            for ID, target in view.map:
-                self.add_target(target)
+            for ID, targets in view.map.items():
+                for target in targets:
+                    self.add_target(target)
+        self.reflect_all()
 
     def add_target(self, target):
         """
@@ -216,10 +288,23 @@ class Interface(Listener):
         Quickly map the provided ID to a Parameter by creating a new
         Parameter target using the class's own maker
         """
-        t = self.maker.make(is_button=is_button)
+        t = self.parameter_maker.make(is_button=is_button)
         self.add_target(t)
         self.view.map_this(ID, t)
         return t
+
+    def quick_view(self, ID, to_view=None, on_view=None):
+        """
+        Quickly map the provided ID to a switch view command with either
+        the provided view or a newly created view
+        """
+        t, view = self.view_maker.make(to_view)
+        if on_view:
+            on_view.map_this(ID, t)
+        else:
+            self.add_target(t)
+            self.view.map_this(ID, t)
+        return t, view
 
     def inform(self, sender, ID, value):
         """
@@ -235,10 +320,10 @@ class Interface(Listener):
 
         for target in targets:
             if sender == self.input:
-                # Perform the action of the target. This might send a
+                # Perform the triggerion of the target. This might send a
                 # message to the output device but could also be a meta
                 # command like switching views
-                target.act(value)
+                target.trigger(value)
                 # Multiple input controls might be mapped to this
                 # so let's reflect on the input device but exclude the
                 # ID that issued the value change
@@ -262,18 +347,23 @@ def test(i):
     for macro in i.input.macros[0][1:]:
         i.view.map_this(macro.ID, t)
 
-    i.quick_parameter(81)
-    i.quick_parameter(82)
-    i.quick_parameter(83)
-    i.quick_parameter(84)
+    init_view = i.view
+    _, second_view = i.quick_view(105)
+    i.quick_view(105, to_view=init_view, on_view=second_view)
 
     i.quick_parameter(81)
     i.quick_parameter(82)
-    i.quick_parameter(83)
-    t = i.quick_parameter(84)
-    i.view.map_this(85, t)
+    t = i.quick_parameter(83)
+    i.view.map_this(84, t)
 
-    i.set_value(t, 127)
+    i.switch_to_view(second_view)
+
+    i.quick_parameter(81)
+    i.quick_parameter(82)
+    t = i.quick_parameter(83)
+    i.view.map_this(84, t)
+
+    i.switch_to_view(init_view)
 
     while True:
         bcr.update(time.time())

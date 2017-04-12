@@ -16,6 +16,8 @@ def unify(value):
         return 127 if value else 0
     elif type(value) == str:
         return 127 if value == "on" else 0
+    else:
+        return value
 
 class Target(object):
     """

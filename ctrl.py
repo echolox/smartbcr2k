@@ -187,7 +187,6 @@ class Interface(Listener):
         """
         for ID in self.view.find_IDs_by_target(target):
             if not exclude_IDs or ID not in exclude_IDs:
-                print(ID, value)
                 self.input.reflect(ID, value)
 
     def switch_to_view(self, view):

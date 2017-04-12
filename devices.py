@@ -164,6 +164,7 @@ class Button(Control):
         # 1: Ignore
         # 0: Turn off
         if self.ignore > 0:
+            print("Ignored ", self.ignore)
             self.ignore -= 1
             self.parent.send(self.ID, self._value)
             return
@@ -190,7 +191,6 @@ class Button(Control):
         """
         Reflects the value (True, False, 0-127) back to the hardware
         """
-        if self.ID == 106:
         if type(value) == bool:
             self.state  = value
             self._value = FULL if value else 0

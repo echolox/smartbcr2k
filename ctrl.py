@@ -253,7 +253,8 @@ class Interface(Listener):
              "next_cc": self.parameter_maker.next_cc,
              "next_view_index": self.view_maker.next_index,
              "active_view": self.view.name,
-             "views": []}
+             "views": [],
+             "name": "Default Profile"}
         
         for view in self.views:
             v = {"name": view.name,
@@ -271,6 +272,7 @@ class Interface(Listener):
         return p
 
     def load_profile(self, p):
+        print("Loading profile %s..." % p["name"])
         # Set own members
         # @TODO: Connect to correct input/output by name
 
@@ -287,18 +289,18 @@ class Interface(Listener):
             self.views.append(view)
             for t in v["map"]:
                 if t["name"] in self.targets:
-                    print("SAME")
                     target = self.targets[t["name"]]
                 else:
-                    print(t["name"])
                     T = get_class(t["type"])
                     target = T.blank(self)
                     target.from_dict(t)
+                    self.add_target(target)
                 view.map_this(t["ID"], target)
-                self.add_target(target)
 
         # activate active view
         self.switch_to_view(p["active_view"])
+
+        print("Profile loaded.")
 
 
     def set_value(self, target, value, input_only=False, exclude_IDs=None):

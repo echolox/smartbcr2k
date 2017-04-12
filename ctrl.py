@@ -518,12 +518,14 @@ def test2(i):
     i.view.map_this(84, t)
 
     # Command button toggle
-    i.quick_parameter(106)
+    tt = i.quick_parameter(106)
     second_view.configuration[106]["toggle"] = True
     # TODO: This is indirect configuration
 
 
     i.switch_to_view(init_view)
+    i.view.map_this(107, tt)
+    i.view.configuration[107]["toggle"] = True
 
     p = i.make_profile()
 

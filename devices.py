@@ -270,9 +270,8 @@ class BCR2k(Device):
         self.set_control(ID, value)
 
     def broadcast(self, ID, value):
-        if (type(value) == bool and value) or type(value) != bool:
-            for listener in self.listeners:
-                listener.inform(self, ID, value)
+        for listener in self.listeners:
+            listener.inform(self, ID, value)
 
 
 class Listener(object):

@@ -11,10 +11,20 @@ def keys_to_ints(j):
     return {int(k): v for k, v in j.items()}
 
 
+def unify(value):
+    if type(value) == bool:
+        return 127 if value else 0
+    elif type(value) == str:
+        return 127 if value == "on" else 0
+
 class Target(object):
     """
     A mapping target. In the Interface, the IDs of the input
-    device are mapped to targets.    """
+    device are mapped to targets.    
+    """
+
+    trigger_vals = [range(128)]
+
     def __init__(self, name, parent):
         self.name = name
         self.parent = parent
@@ -45,6 +55,9 @@ class SwitchView(Target):
     Issues the command to switch to a preconfigured View
     when triggered.
     """
+
+    trigger_vals = [127]
+
     def __init__(self, name, parent, view):
         super(SwitchView, self).__init__(name, parent)
         if type(view) == str:
@@ -358,11 +371,12 @@ class Interface(Listener):
                 try:
                     # Does the target have a value type?
                     getattr(target, "value")
-                    # If so, no exception was triggered
-                    self.input.reflect(ID, target.value)
-                    untouched.remove(ID)
                 except AttributeError:
-                    pass
+                    continue
+                self.input.reflect(ID, target.value)
+                if ID == 106:
+                    print(target.name, target.value, self.input.controls[ID].state)
+                untouched.remove(ID)
 
         for ID in untouched:
             self.input.reflect(ID, 0)
@@ -442,19 +456,22 @@ class Interface(Listener):
             print("No target configured for ID %i" % ID)
             return
 
+
         for target in targets:
-            if sender == self.input:
-                # Perform the triggerion of the target. This might send a
-                # message to the output device but could also be a meta
-                # command like switching views
-                target.trigger(value)
-                # Multiple input controls might be mapped to this
-                # so let's reflect on the input device but exclude the
-                # ID that issued the value change
-                self.reflect_value(target, value, exclude_IDs=[ID])
-            elif sender == self.output:
-                # Just reflect the value in both target and on the input device
-                self.set_value(target, value, input_only=True)
+            # Some targets should not be triggered on an Off, False, 0 value
+            if unify(value) in target.trigger_vals:
+                if sender == self.input:
+                    # Perform the triggerion of the target. This might send a
+                    # message to the output device but could also be a meta
+                    # command like switching views
+                    target.trigger(value)
+                    # Multiple input controls might be mapped to this
+                    # so let's reflect on the input device but exclude the
+                    # ID that issued the value change
+                    self.reflect_value(target, value, exclude_IDs=[ID])
+                elif sender == self.output:
+                    # Just reflect the value in both target and on the input device
+                    self.set_value(target, value, input_only=True)
 
     def __repr__(self):
         return "Interface"

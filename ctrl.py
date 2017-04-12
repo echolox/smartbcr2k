@@ -351,6 +351,7 @@ class Interface(Listener):
         """
         Based on the current view, reflect all values to the input device
         """
+        # @FIX: Unmapped controls retain value from previous view
         for ID, targets in self.view.map.items():
             for target in targets:
                 try:

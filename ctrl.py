@@ -2,6 +2,7 @@ import time
 import rtmidi
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
+from collections import defaultdict
 
 from devices import BCR2k, MidiLoop, Listener
 
@@ -99,7 +100,7 @@ class View(object):
         self.configuration = {}
 
         # Map IDs of a device's controls to Parameters
-        self.map = {}
+        self.map = defaultdict(list)
     
 
 class Interface(Listener):
@@ -133,8 +134,6 @@ class Interface(Listener):
 
         self.maker = ParameterMaker(self.output, 1)
 
-#        self.add_target(self.maker.make(is_button=False))
-#        self.view.map[90] = self.targets["Testing"]
 
     def set_value(self, target, value, input_only=False):
         """
@@ -150,9 +149,10 @@ class Interface(Listener):
         """
         # Find a Control on the input device that is mapped to the
         # provided target and set it to the current value
-        for ID, vtarget in self.view.map.items():
-            if target == vtarget:
-                self.input.send(ID, value)
+        for ID, vtargets in self.view.map.items():
+            for target in vtargets:
+                if target == vtarget:
+                    self.input.send(ID, value)
 
         # Prevent feedback loop, for example if the source of the
         # new value was the output device itself
@@ -193,7 +193,7 @@ class Interface(Listener):
         """
         t = self.maker.make(is_button=False)
         self.add_target(t)
-        self.view.map[ID] = t
+        self.view.map[ID].append(t)
 
     def inform(self, sender, ID, value):
         """
@@ -202,19 +202,20 @@ class Interface(Listener):
         daw -> automation).
         """
         try:
-            target = self.view.map[ID]
+            targets = self.view.map[ID]
         except KeyError:
             print("No target configured for ID %i" % ID)
             return
 
-        if sender == self.input:
-            # Perform the action of the target. This might send a
-            # message to the output device but could also be a meta
-            # command like switching views
-            target.act(value)
-        elif sender == self.output:
-            # Just reflect the value in both target and on the input device
-            self.set_value(target, value, input_only=True)
+        for target in targets:
+            if sender == self.input:
+                # Perform the action of the target. This might send a
+                # message to the output device but could also be a meta
+                # command like switching views
+                target.act(value)
+            elif sender == self.output:
+                # Just reflect the value in both target and on the input device
+                self.set_value(target, value, input_only=True)
 
     def __repr__(self):
         return "Interface"
@@ -227,6 +228,11 @@ class Interface(Listener):
 
 
 def test(i):
+    i.quick_parameter(81)
+    i.quick_parameter(82)
+    i.quick_parameter(83)
+    i.quick_parameter(84)
+
     i.quick_parameter(81)
     i.quick_parameter(82)
     i.quick_parameter(83)

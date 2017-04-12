@@ -286,10 +286,16 @@ class Interface(Listener):
             view = View(v["name"])
             self.views.append(view)
             for t in v["map"]:
-                T = get_class(t["type"])
-                target = T.blank(self)
-                target.from_dict(t)
+                if t["name"] in self.targets:
+                    print("SAME")
+                    target = self.targets[t["name"]]
+                else:
+                    print(t["name"])
+                    T = get_class(t["type"])
+                    target = T.blank(self)
+                    target.from_dict(t)
                 view.map_this(t["ID"], target)
+                self.add_target(target)
 
         # activate active view
         self.switch_to_view(p["active_view"])
@@ -446,7 +452,6 @@ def test(i):
     with open("default.bcr", "r") as infile:
         p = json.load(infile)
         i.load_profile(p)
-
 
 
     while True:

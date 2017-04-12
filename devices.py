@@ -55,7 +55,7 @@ class Device(object):
 
     def input_callback(self, event, date=None):
         message, deltatime = event
-#        print("[%s] %r" % (self.name, message))
+        print("[%s] %r" % (self.name, message))
 
     def send(self, cc, value):
         channel_byte = CONTROL_CHANGE | (self.channel - 1)
@@ -179,7 +179,6 @@ class Button(Control):
             return self._value
     
     def reflect(self, value):
-        print("Reflect ", value)
         if type(value) == bool:
             self.state  = value
             self._value = FULL if value else 0
@@ -250,6 +249,7 @@ class BCR2k(Device):
         as a broadcast from the device.
         """
         try:
+            print(ID, value)
             self.controls[ID].reflect(value)
         except KeyError:
             print("Control with ID %s not found" % ID)

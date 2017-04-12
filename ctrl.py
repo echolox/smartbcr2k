@@ -278,16 +278,6 @@ def test(i):
 
     i.set_value(t, 127)
 
-    # @Fix: Multiple buttons mapped to the same target
-    #       don't behave in sync yet
-    i.quick_parameter(65, is_button=True)
-    i.quick_parameter(66, is_button=True)
-    i.quick_parameter(67, is_button=True)
-    t = i.quick_parameter(68, is_button=True)
-    i.view.map_this(69, t)
-
-#    i.set_value(t, 127)
-
     while True:
         bcr.update(time.time())
 

@@ -187,7 +187,8 @@ class Interface(Listener):
         """
         for ID in self.view.find_IDs_by_target(target):
             if not exclude_IDs or ID not in exclude_IDs:
-                self.input.send(ID, value)
+                print(ID, value)
+                self.input.reflect(ID, value)
 
  
 
@@ -285,7 +286,7 @@ def test(i):
     t = i.quick_parameter(68, is_button=True)
     i.view.map_this(69, t)
 
-    i.set_value(t, 127)
+#    i.set_value(t, 127)
 
     while True:
         bcr.update(time.time())

@@ -55,7 +55,7 @@ class Device(object):
 
     def input_callback(self, event, date=None):
         message, deltatime = event
-        print("[%s] %r" % (self.name, message))
+#        print("[%s] %r" % (self.name, message))
 
     def send(self, cc, value):
         channel_byte = CONTROL_CHANGE | (self.channel - 1)
@@ -100,12 +100,14 @@ class Control(object):
 
     @value.setter
     def value(self, value):
+        self.reflect(value)
+        self.parent.broadcast(self.ID, self._value)
+        return self._value
+
+    def reflect(self, value):
         self._value = clip(self.minval, self.maxval, value)
         self.parent.send(self.ID, self._value)
         # @Fix: Corrected value not accepted by hardware (dials)
-
-        self.parent.broadcast(self.ID, self._value)
-        return self._value
 
 
     def __repr__(self):
@@ -158,11 +160,9 @@ class Button(Control):
             return
 
         if self.type == ButtonType.MOMENTARY:
-            self._value = clip(self.minval, self.maxval, value)
-            self.state  = self._value == self.maxval
-            self.parent.send(self.ID, self._value)
+            self.reflect(value)
             self.parent.broadcast(self.ID, self.state)
-            if value == self.maxval:
+            if self._value == self.maxval:
                 self.fire()
 
         elif self.type == ButtonType.TOGGLE:
@@ -177,7 +177,23 @@ class Button(Control):
             self.parent.send(self.ID, self._value)
             self.parent.broadcast(self.ID, self.state)
             return self._value
+    
+    def reflect(self, value):
+        print("Reflect ", value)
+        if type(value) == bool:
+            self.state  = value
+            self._value = FULL if value else 0
+        else:
+            self._value = clip(self.minval, self.maxval, value)
+            self.state  = self._value == self.maxval
 
+        if self.type == ButtonType.TOGGLE:
+            if self.state:
+                self.ignore = 1
+            else:
+                self.ignore = 0
+
+        self.parent.send(self.ID, self._value)
 
 
 class Dial(Control):
@@ -222,17 +238,26 @@ class BCR2k(Device):
             self.command_buttons.append(self.controls[i])
 
 
-    def set_control(self, ID, value):
+    def set_control(self, ID, value, reflect=False):
         try:
             self.controls[ID].value = value
         except KeyError:
             print("Control with ID %s not found" % ID)
 
+    def reflect(self, ID, value):
+        """
+        Sets the value of a control without issuing the value back
+        as a broadcast from the device.
+        """
+        try:
+            self.controls[ID].reflect(value)
+        except KeyError:
+            print("Control with ID %s not found" % ID)
+
+
     def input_callback(self, event, date=None):
         message, deltatime = event
         _, ID, value = message
-#        print("[%s] %r" % (self.name, message))
-
         self.set_control(ID, value)
 
     def broadcast(self, ID, value):

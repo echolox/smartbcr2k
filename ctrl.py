@@ -3,20 +3,7 @@ import rtmidi
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
 
-from devices import BCR2k, MidiLoop
-
-class Listener(object):
-    """
-    Can be added to a device's listeners list
-    """
-    def inform(self, sender, ID, value):
-        """
-        Override this function.
-        @sender: A Device
-        @ID:     ID of the device's control that sent the...
-        @value:  Transmitted value of the control
-        """
-        print("(%s) %s says %i is now %i" % (self, sender, ID, value))
+from devices import BCR2k, MidiLoop, Listener
 
 
 class Target(object):
@@ -32,6 +19,7 @@ class Target(object):
         with the value transmitted by the Control.
         """
         raise NotImplemented
+
 
 class Parameter(Target):
     """
@@ -58,6 +46,39 @@ class Parameter(Target):
                 value = 0
         self.value = value
         self.device.send(self.cc, self.value)
+
+
+class Exhausted(Exception):
+    pass
+
+class ParameterMaker(object):
+    """
+    Produces Targets of the type Parameter. Everytime a new target is
+    requested it assigns that target the next available CC.
+    """
+    def __init__(self, output_device, channel, prefix="CC", first_cc=1, expand=True):
+        self.device = output_device
+        self.channel = channel
+        self.next_cc = first_cc
+        self.prefix = prefix
+        self.expand = expand
+
+        self.exhausted = False
+
+    def make(self, is_button=False):
+        if self.exhausted:
+            raise Exhausted
+
+        name = "%s_%i" % (self.prefix, self.next_cc)
+        t = Parameter(name, self.device, self.next_cc, is_button=is_button)        
+        self.next_cc += 1
+        if self.next_cc > 128:
+            if self.expand and self.channel < 16:
+                self.next_cc = 1
+                self.channel += 1
+            else:
+                self.exhausted = True
+        return t
 
 
 class View(object):
@@ -110,9 +131,10 @@ class Interface(Listener):
         self.input.listeners.append(self)
         self.output.listeners.append(self)
 
-        # TESTING MAPPING
-        self.add_target(Parameter("Testing", self.output, 57, is_button=False))
-        self.view.map[90] = self.targets["Testing"]
+        self.maker = ParameterMaker(self.output, 1)
+
+#        self.add_target(self.maker.make(is_button=False))
+#        self.view.map[90] = self.targets["Testing"]
 
     def set_value(self, target, value, input_only=False):
         """
@@ -164,6 +186,15 @@ class Interface(Listener):
             return
         self.targets[target.name] = target
 
+    def quick_parameter(self, ID):
+        """
+        Quickly map the provided ID to a Parameter by creating a new
+        Parameter target using the class's own maker
+        """
+        t = self.maker.make(is_button=False)
+        self.add_target(t)
+        self.view.map[ID] = t
+
     def inform(self, sender, ID, value):
         """
         Callback method whenever the input or output devices produce
@@ -191,13 +222,17 @@ class Interface(Listener):
     def __str__(self):
         return self.__repr__()
 
+
+##################################
+
+
 def test(i):
-    i.set_value(i.targets["Testing"], 127, input_only=True)
-    try:
-        while True:
-            bcr.update(time.time())
-    except KeyboardInterrupt:
-        print("Exiting...")
+    i.quick_parameter(81)
+    i.quick_parameter(82)
+    i.quick_parameter(83)
+    i.quick_parameter(84)
+    while True:
+        bcr.update(time.time())
 
 
 def fun(bcr):

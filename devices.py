@@ -239,3 +239,18 @@ class BCR2k(Device):
         for listener in self.listeners:
             listener.inform(self, ID, value)
 
+
+class Listener(object):
+    """
+    Can be added to a device's listeners list
+    """
+    def inform(self, sender, ID, value):
+        """
+        Override this function.
+        @sender: A Device
+        @ID:     ID of the device's control that sent the...
+        @value:  Transmitted value of the control
+        """
+        print("(%s) %s says %i is now %i" % (self, sender, ID, value))
+
+

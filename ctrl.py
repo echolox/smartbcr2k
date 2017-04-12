@@ -12,8 +12,9 @@ class Target(object):
     """
     A mapping target. In the Interface, the IDs of the input
     device are mapped to targets.    """
-    def __init__(self, name):
+    def __init__(self, name, parent):
         self.name = name
+        self.parent = parent
 
     def trigger(self, value):
         """
@@ -22,9 +23,18 @@ class Target(object):
         """
         raise NotImplemented
 
-    def serialize(self):
+    def serialize(self, ID):
         return {"name": self.name,
-                "type": type(self).__name__}
+                "type": type(self).__name__,
+                "ID": ID,
+                }
+
+    def from_dict(self, d):
+        self.name = d["name"]
+
+    @classmethod
+    def blank(self, parent):
+        return Target("unnamed", parent)
 
 
 class SwitchView(Target):
@@ -32,19 +42,28 @@ class SwitchView(Target):
     Issues the command to switch to a preconfigured View
     when triggered.
     """
-    def __init__(self, name, interface, view):
-        self.name = name
-        self.interface = interface
-        self.view = view
+    def __init__(self, name, parent, view):
+        super(SwitchView, self).__init__(name, parent)
+        if type(view) == str:
+            self.view_name = view
+        else:
+            self.view_name = view.name
 
     def trigger(self, value):
-        self.interface.switch_to_view(self.view)
+        self.parent.switch_to_view(self.view_name)
 
-    def serialize(self):
-        s = super(SwitchView, self).serialize() 
-        s["view"] = self.view.name
+    def serialize(self, *args, **kwargs):
+        s = super(SwitchView, self).serialize(*args, **kwargs) 
+        s["view"] = self.view_name
         return s
 
+    def from_dict(self, d):
+        super(SwitchView, self).from_dict(d)
+        self.view_name = d["view"]
+
+    @classmethod
+    def blank(self, parent):
+        return SwitchView("unnamed", parent, "")
 
 class Parameter(Target):
     """
@@ -53,14 +72,13 @@ class Parameter(Target):
     Button values are (for now) hardcoded to 0 for Off and 127 for On.
     """
     def __init__(self, name, parent, cc, initial=0, is_button=False):
-        self.name = name
-        self.parent = parent
+        super(Parameter, self).__init__(name, parent)
         self.cc = cc
         self.value = initial
         self.is_button = is_button
 
-    def serialize(self):
-        s = super(Parameter, self).serialize() 
+    def serialize(self, *args, **kwargs):
+        s = super(Parameter, self).serialize(*args, **kwargs) 
         s["cc"] = self.cc
         s["value"] = self.value
         s["is_button"] = self.is_button
@@ -80,10 +98,15 @@ class Parameter(Target):
         # @Robustness: This is kinda wonky
         self.parent.output.send(self.cc, self.value)
 
+    def from_dict(self, d):
+        super(Parameter, self).from_dict(d)
+        self.cc = d["cc"]
+        self.value = d["value"]
+        self.is_button = d["is_button"]
 
-TargetsWithValues = [Parameter,
-                    ]
-
+    @classmethod
+    def blank(self, parent):
+        return Parameter("unnamed", parent, 0)
 
 class Exhausted(Exception):
     pass
@@ -153,6 +176,7 @@ class View(object):
 
         # Map IDs of a device's controls to Parameters
         self.map = defaultdict(list)
+
 
     def find_IDs_by_target(self, vtarget):
         """
@@ -228,7 +252,7 @@ class Interface(Listener):
              "output": self.output.name,
              "next_cc": self.parameter_maker.next_cc,
              "next_view_index": self.view_maker.next_index,
-             "active_view_index": self.views.index(self.view),
+             "active_view": self.view.name,
              "views": []}
         
         for view in self.views:
@@ -241,10 +265,34 @@ class Interface(Listener):
             m = v["map"]
             for ID, targets in view.map.items():
                 for target in targets:
-                    m.append(target.serialize())
+                    m.append(target.serialize(ID))
             p["views"].append(v)
 
         return p
+
+    def load_profile(self, p):
+        # Set own members
+        # @TODO: Connect to correct input/output by name
+
+        # Set next_ values
+        self.parameter_maker.next_cc = p["next_cc"]
+        self.view_maker.next_index = p["next_view_index"]
+
+        # Create views and their targets
+        self.views = []
+        self.view = None
+        get_class = lambda x: globals()[x]
+        for v in p["views"]:
+            view = View(v["name"])
+            self.views.append(view)
+            for t in v["map"]:
+                T = get_class(t["type"])
+                target = T.blank(self)
+                target.from_dict(t)
+                view.map_this(t["ID"], target)
+
+        # activate active view
+        self.switch_to_view(p["active_view"])
 
 
     def set_value(self, target, value, input_only=False, exclude_IDs=None):
@@ -299,15 +347,24 @@ class Interface(Listener):
                 except AttributeError:
                     pass
 
+
     def switch_to_view(self, view):
         """
         Switches to the provided view. If this is a new view it will
         be added to the Interface's view catalog and all targets of
         that view will be added to the total list of targets.
         """
-        print("[%s] Switching to %s" % (self, view))
-        # @TODO: Switch configurations out
+        if type(view) == str:
+            # Find view by name
+            view = list(filter(lambda v: v.name==view, self.views))
+            if len(view) != 1:
+                raise KeyError
+            view = view[0]
+
         self.view = view
+        print("[%s] Switched to %s" % (self, view))
+
+        # @TODO: Switch configurations out
         if view not in self.views:
             self.views.append(view)
             for ID, targets in view.map.items():
@@ -385,6 +442,13 @@ class Interface(Listener):
 
 def test(i):
 
+    import json
+    with open("default.bcr", "r") as infile:
+        p = json.load(infile)
+        i.load_profile(p)
+
+
+
     while True:
         bcr.update(time.time())
 
@@ -415,6 +479,7 @@ def test2(i):
 
     p = i.make_profile()
 
+    print(p)
     import json
     with open("default.bcr", "w") as outfile:
         json.dump(p, outfile)
@@ -441,4 +506,4 @@ if __name__ == "__main__":
     interface = Interface(bcr, loop)
 
 #    fun(bcr)
-    test2(interface)
+    test(interface)

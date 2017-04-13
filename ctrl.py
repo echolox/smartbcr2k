@@ -3,9 +3,10 @@ import rtmidi
 import json
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
-from collections import defaultdict, namedtuple
+from collections import namedtuple
+from collections import defaultdict as ddict
 
-from devices import BCR2k, MidiLoop, Listener
+from devices import BCR2k, MidiLoop, Listener, FULL, clip
 
 def keys_to_ints(j):
     return {int(k): v for k, v in j.items()}
@@ -33,7 +34,7 @@ class Target(object):
         self.parent = parent
         self.trigger_callback = callback
 
-    def trigger(self, value):
+    def trigger(self, value=None):
         """
         Their trigger method is then called
         with the value transmitted by the Control.
@@ -70,7 +71,7 @@ class SwitchView(Target):
         # @TODO: Class member override?
         self.trigger_vals = [127]
 
-    def trigger(self, value):
+    def trigger(self, value=None):
         self.parent.switch_to_view(self.view_name)
         super().trigger(value)
 
@@ -87,16 +88,52 @@ class SwitchView(Target):
     def blank(self, parent):
         return SwitchView("unnamed", parent, "")
 
-class Parameter(Target):
+
+class ValueTarget(Target):
+    """
+    A type of Target that caries a value with it. These are automatically
+    modifiable without having to know much about modifiers (see modifiers.py)
+    """
+    
+    def __init__(self, name, parent, initial=0, minimum=0, maximum=FULL, **kwargs):
+        super().__init__(name, parent, **kwargs)
+        self._value = initial  # This is the 'center' value
+        self.minimum = minimum
+        self.maximum = maximum
+        self.modifiers = ddict(lambda: 0.0)  # object -> float
+
+    def modify(self, modifier, value):
+        """
+        """
+        self.modifiers[modifier] = value
+        self.trigger()
+
+    def remove_modifier(self, modifier):
+        """
+        """
+        try:
+            del self.modifiers[modifier]
+        except KeyError:
+            pass
+
+    @property
+    def value(self):
+        return clip(self.minimum, self.maximum, self._value + sum(self.modifiers.values()))
+
+    @value.setter
+    def value(self, v):
+        self._value = v
+
+
+class Parameter(ValueTarget):
     """
     A type of target that simply maps the incoming value to a
     Control Change midi signal on the configured (output) device.
     Button values are (for now) hardcoded to 0 for Off and 127 for On.
     """
     def __init__(self, name, parent, cc, initial=0, is_button=False, **kwargs):
-        super().__init__(name, parent, **kwargs)
+        super().__init__(name, parent, initial, **kwargs)
         self.cc = cc
-        self.value = initial
         self.is_button = is_button
 
     def serialize(self, *args, **kwargs):
@@ -106,20 +143,21 @@ class Parameter(Target):
         s["is_button"] = self.is_button
         return s
 
-    def trigger(self, value):
+    def trigger(self, value=None):
         """
         Forwards the value to the configured (output) Device with
         the transmitted value.
         """
-        if self.is_button:
-            if value:
-                value = 127
-            else:
-                value = 0
-        self.value = value
+        if value:
+            if self.is_button:
+                if value:
+                    value = 127
+                else:
+                    value = 0
+            self.value = value
         # @Robustness: This is kinda wonky
         self.parent.output.send(self.cc, self.value)
-        super().trigger(value)
+        super().trigger(self.value)
 
     def from_dict(self, d):
         super(Parameter, self).from_dict(d)
@@ -203,7 +241,7 @@ class View(object):
 
 
         # Map IDs of a device's controls to Targets
-        self.map = defaultdict(list)
+        self.map = ddict(list)
 
 
     def find_IDs_by_target(self, vtarget):

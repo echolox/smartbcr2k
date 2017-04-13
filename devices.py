@@ -9,9 +9,6 @@ DEFAULT_IN_PORT = 7
 DEFAULT_OUT_PORT = 8
 FULL = 127
 
-list_input_ports()
-list_output_ports()
-
 
 def clip(minval, maxval, value):
     return sorted((minval, value, maxval))[1]

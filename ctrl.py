@@ -580,7 +580,7 @@ def test2(i):
         i.view.map_this(macro.ID, t)
 
     from modifiers import LFOSine
-    s = LFOSine(frequency=0.5)
+    s = LFOSine(frequency=1)
     s.target(t)
 
     init_view = i.view

@@ -94,13 +94,16 @@ class Modifier(object):
 
 
 class LFOSine(Modifier):
+    """
+    A positive sine, moving from 0 to 1*amplitude
+    """
     
     def __init__(self, frequency=0.2, **kwargs):
         super().__init__(**kwargs)
         self.frequency = frequency
 
     def calculate(self, t):
-        return sin(t * self.frequency)  
+        return (sin(t * self.frequency) + 1) * 0.5
 
 
 if __name__ == '__main__':

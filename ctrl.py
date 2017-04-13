@@ -1,6 +1,6 @@
 import time
 import rtmidi
-import shelve
+import json
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
 from collections import defaultdict, namedtuple
@@ -480,14 +480,20 @@ class Interface(Listener):
 
 ##################################
 
+def load_profile(interface, filename):
+    with open(filename, "r") as infile:
+        interface.load_profile(json.load(infile))
+
+
+def save_profile(interface, filename):
+    with open(filename, "w") as outfile:
+        json.dump(interface.make_profile(), outfile)
+
 
 def test(i):
-
-    import json
     with open("default.bcr", "r") as infile:
         p = json.load(infile)
         i.load_profile(p)
-
 
     while True:
         bcr.update(time.time())

@@ -1,172 +1,23 @@
 import time
 import rtmidi
 import json
+
+from threading import Thread
+
+from importlib import import_module
+
 from enum import Enum
-from rtmidi.midiconstants import CONTROL_CHANGE
 from collections import namedtuple
 from collections import defaultdict as ddict
 
+from rtmidi.midiconstants import CONTROL_CHANGE
+
+from targets import get_target, Parameter, SwitchView
 from devices import BCR2k, MidiLoop, Listener, FULL, clip
+from modifiers import get_modifier
 
-def keys_to_ints(j):
-    return {int(k): v for k, v in j.items()}
+from util import keys_to_ints, unify
 
-
-def unify(value):
-    if type(value) == bool:
-        return 127 if value else 0
-    elif type(value) == str:
-        return 127 if value == "on" else 0
-    else:
-        return value
-
-
-class Target(object):
-    """
-    A mapping target. In the Interface, the IDs of the input
-    device are mapped to targets.    
-    """
-
-    trigger_vals = list(range(128))
-
-    def __init__(self, name, parent, callback=None):
-        self.name = name
-        self.parent = parent
-        self.trigger_callback = callback
-
-    def trigger(self, value=None):
-        """
-        Their trigger method is then called
-        with the value transmitted by the Control.
-        """
-        if self.trigger_callback:
-            self.trigger_callback(self)
-
-    def serialize(self, ID):
-        return {"name": self.name,
-                "type": type(self).__name__,
-                "ID": ID,
-                }
-
-    def from_dict(self, d):
-        self.name = d["name"]
-
-    @classmethod
-    def blank(self, parent):
-        return Target("unnamed", parent)
-
-
-class SwitchView(Target):
-    """
-    Issues the command to switch to a preconfigured View
-    when triggered.
-    """
-
-    def __init__(self, name, parent, view, **kwargs):
-        super().__init__(name, parent, **kwargs)
-        if type(view) == str:
-            self.view_name = view
-        else:
-            self.view_name = view.name
-        # @TODO: Class member override?
-        self.trigger_vals = [127]
-
-    def trigger(self, value=None):
-        self.parent.switch_to_view(self.view_name)
-        super().trigger(value)
-
-    def serialize(self, *args, **kwargs):
-        s = super(SwitchView, self).serialize(*args, **kwargs) 
-        s["view"] = self.view_name
-        return s
-
-    def from_dict(self, d):
-        super(SwitchView, self).from_dict(d)
-        self.view_name = d["view"]
-
-    @classmethod
-    def blank(self, parent):
-        return SwitchView("unnamed", parent, "")
-
-
-class ValueTarget(Target):
-    """
-    A type of Target that caries a value with it. These are automatically
-    modifiable without having to know much about modifiers (see modifiers.py)
-    """
-    
-    def __init__(self, name, parent, initial=0, minimum=0, maximum=FULL, **kwargs):
-        super().__init__(name, parent, **kwargs)
-        self._value = initial  # This is the 'center' value
-        self.minimum = minimum
-        self.maximum = maximum
-        self.modifiers = ddict(lambda: 0.0)  # object -> float
-
-    def modify(self, modifier, value):
-        """
-        """
-        self.modifiers[modifier] = value
-        self.trigger()
-
-    def remove_modifier(self, modifier):
-        """
-        """
-        try:
-            del self.modifiers[modifier]
-        except KeyError:
-            pass
-
-    @property
-    def value(self):
-        return clip(self.minimum, self.maximum, self._value + sum(self.modifiers.values()))
-
-    @value.setter
-    def value(self, v):
-        self._value = v
-
-
-class Parameter(ValueTarget):
-    """
-    A type of target that simply maps the incoming value to a
-    Control Change midi signal on the configured (output) device.
-    Button values are (for now) hardcoded to 0 for Off and 127 for On.
-    """
-    def __init__(self, name, parent, cc, initial=0, is_button=False, **kwargs):
-        super().__init__(name, parent, initial, **kwargs)
-        self.cc = cc
-        self.is_button = is_button
-
-    def serialize(self, *args, **kwargs):
-        s = super(Parameter, self).serialize(*args, **kwargs) 
-        s["cc"] = self.cc
-        s["value"] = self.value
-        s["is_button"] = self.is_button
-        return s
-
-    def trigger(self, value=None):
-        """
-        Forwards the value to the configured (output) Device with
-        the transmitted value.
-        """
-        if value:
-            if self.is_button:
-                if value:
-                    value = 127
-                else:
-                    value = 0
-            self.value = value
-        self.parent.reflect_value(self)
-        super().trigger(self.value)
-
-    def from_dict(self, d):
-        super(Parameter, self).from_dict(d)
-        self.cc = d["cc"]
-        self.value = d["value"]
-        self.is_button = d["is_button"]
-
-    @classmethod
-    def blank(self, parent):
-        return Parameter("unnamed", parent, 0)
 
 class Exhausted(Exception):
     pass
@@ -314,8 +165,12 @@ class Interface(Listener):
 
         self.observers = []
 
+        self.modifiers = set()
+
         self.parameter_maker = ParameterMaker(self, 1)
         self.view_maker      = ViewMaker(self)
+
+        self.update_thread = None
 
     def make_profile(self):
         p = {"input": self.input.name,
@@ -324,6 +179,7 @@ class Interface(Listener):
              "next_view_index": self.view_maker.next_index,
              "active_view": self.view.name,
              "views": [],
+             "modifiers": [],
              "name": "Default Profile"}
         
         for view in self.views:
@@ -336,6 +192,8 @@ class Interface(Listener):
                 for target in targets:
                     m.append(target.serialize(ID))
             p["views"].append(v)
+
+        p["modifiers"] = [m.serialize() for m in self.modifiers]
 
         return p
 
@@ -350,7 +208,7 @@ class Interface(Listener):
         # Create views and their targets
         self.views = []
         self.view = None
-        get_class = lambda x: globals()[x]
+
         for v in p["views"]:
             view = View(self.input, v["name"])
             view.configuration = keys_to_ints(v["configuration"])
@@ -359,11 +217,27 @@ class Interface(Listener):
                 if t["name"] in self.targets:
                     target = self.targets[t["name"]]
                 else:
-                    T = get_class(t["type"])
+                    try:
+                        T = get_target(t["type"])
+                    except KeyError as e:
+                        print(e)
+                        continue
                     target = T.blank(self)
                     target.from_dict(t)
                     self.add_target(target)
                 view.map_this(t["ID"], target)
+
+        # Create modifiers
+
+        for m in p["modifiers"]:
+            try:
+                M = get_modifier(m["type"])
+            except KeyError as e:
+                print(e)
+                continue
+            mod = M()
+            mod.from_dict(m, self.targets)
+            self.add_modifier(mod)
 
         # activate active view
         self.switch_to_view(p["active_view"])
@@ -547,6 +421,30 @@ class Interface(Listener):
         for o in self.observers:
             o.callback_value(IDs_mapped, target)
 
+    def add_modifier(self, modifier):
+        self.modifiers.add(modifier)
+
+    def remove_modifier(self, modifier):
+        try:
+            self.modifier.remove(modifier)
+        except KeyError:
+            pass
+
+    def start(self):
+        def main_loop():
+            while True:
+                self.update(time.time())
+                time.sleep(1.0 / 30)
+
+        self.update_thread = Thread(target=main_loop, daemon=True)
+        self.update_thread.start()
+
+
+    def update(self, time):
+        for m in self.modifiers:
+            m.tick(time)
+        self.input.update(time)
+
     def __repr__(self):
         return "Interface"
 
@@ -563,6 +461,7 @@ def load_profile(interface, filename):
 def save_profile(interface, filename):
     with open(filename, "w") as outfile:
         json.dump(interface.make_profile(), outfile)
+        print("Saved to %s" % filename)
 
 
 def test(i):
@@ -581,6 +480,7 @@ def test2(i):
 
     from modifiers import LFOSine
     s = LFOSine(frequency=1)
+    i.add_modifier(s)
     s.target(t)
 
     init_view = i.view
@@ -615,16 +515,9 @@ def test2(i):
     i.view.map_this(107, tt)
     i.view.configuration[107]["toggle"] = True
 
-    p = i.make_profile()
+    save_profile(i, "default.bcr")
 
-    import json
-    with open("default.bcr", "w") as outfile:
-        json.dump(p, outfile)
-
-    while True:
-        s.tick(time.time())
-        bcr.update(time.time())
-        time.sleep(1.0 / 30)
+    i.start()
 
 
 def fun(bcr):
@@ -646,3 +539,6 @@ if __name__ == "__main__":
 
 #    fun(bcr)
     test2(interface)
+
+    while True:
+        pass

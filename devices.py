@@ -5,13 +5,10 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
+from util import FULL, clip
+
 DEFAULT_IN_PORT = 7
 DEFAULT_OUT_PORT = 8
-FULL = 127
-
-
-def clip(minval, maxval, value):
-    return sorted((minval, value, maxval))[1]
 
 
 def select_port(port_type="input"):

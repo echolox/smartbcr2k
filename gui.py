@@ -302,4 +302,6 @@ if __name__ == '__main__':
     # Initialize GUI
     editor.initialize(interface, controller)
 
+    interface.start()
+
     sys.exit(app.exec_())

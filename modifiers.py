@@ -1,8 +1,11 @@
 from collections import defaultdict as ddict
 
 from math import sin
-from ctrl import ValueTarget
+
+from targets import ValueTarget
 from devices import clip
+
+from util import FULL
 
 MIN_MOD = 0
 MAX_MOD = 127
@@ -22,6 +25,23 @@ class Modifier(object):
 
         self.targets = ddict(lambda: 0.0)  # target object -> [-1, 1]
     
+    def serialize(self):
+        m = {"amplitude": self._amplitude,
+             "type": type(self).__name__,
+            }
+        m["targets"] = {t.name: power for t, power in self.targets.items()}
+        return m
+
+    def from_dict(self, m, all_targets, *args, **kwargs):
+        self._amplitude = m["amplitude"]
+        for target_name, power in m["targets"].items():
+            try:
+                target = all_targets[target_name]
+            except KeyError as e:
+                print(e)
+                continue
+            self.target(target, power)
+
     def target(self, target, power=1.0):
         """
         Expects a target object and a power in the range [-1, 1]
@@ -92,6 +112,12 @@ class Modifier(object):
     def calculate(self, t):
         raise NotImplementedError
 
+    def __repr__(self):
+        return type(self).__name__
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class LFOSine(Modifier):
     """
@@ -102,9 +128,24 @@ class LFOSine(Modifier):
         super().__init__(**kwargs)
         self.frequency = frequency
 
+    def serialize(self):
+        m = super().serialize()
+        m["frequency"] = self.frequency
+        return m
+
+    def from_dict(self, m, *args, **kwargs):
+        super().from_dict(m, *args, **kwargs)
+        self.frequency = m["frequency"]
+
     def calculate(self, t):
         return (sin(t * self.frequency) + 1) * 0.5
 
+
+from inspect import isclass
+MODIFIERS = {C.__name__: C for C in globals().values() if isclass(C) and issubclass(C, Modifier)}
+
+def get_modifier(name):
+    return MODIFIERS[name]
 
 if __name__ == '__main__':
     r = LFOSine()

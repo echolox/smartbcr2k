@@ -2,12 +2,13 @@ import sys
 import itertools
 from collections import namedtuple
 
-from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget, QLineEdit, QAction, QMenuBar, QMainWindow
+from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget, QLineEdit, QAction, QMenuBar, QMainWindow, QSlider
 from PyQt5.QtGui import QImage, QPixmap, QFont, QPalette, QBrush, QColor
 from PyQt5.QtCore import Qt
 
 from ctrl import Interface, View, load_profile, save_profile
 from devices import BCR2k, MidiLoop
+import devices
 
 Vector2 = namedtuple("Vector2", ["x", "y"])
 
@@ -46,6 +47,11 @@ class Controller(object):
         load_profile(self.interface, "default.bcr")
         
         # TODO: Reload everything in UI from Profile
+
+    def value_changed(self, ID, value):
+        targets = self.interface.view.map[ID]
+        for target in targets:
+            self.interface.set_value(target, value)
 
 
 class Editor(QMainWindow):
@@ -169,8 +175,26 @@ class Editor(QMainWindow):
         col = 0
         rowlen = 8
 
-        WidgetDial = QPushButton
-        WidgetButton = QPushButton
+
+
+        def create_dial(control):
+            ID = control.ID
+            sld = QSlider(Qt.Horizontal, self)
+            sld.setMaximum(127)
+            #sld.setFocusPolicy(Qt.NoFocus)
+            sld.sliderMoved.connect(lambda value: self.value_changed(ID, value))
+            return sld
+
+        def create_button(control):
+            ID = control.ID
+            button = QPushButton(str(control))
+            button.setCheckable(True)
+            button.clicked[bool].connect(lambda value: self.value_changed(ID, value))
+            return button
+
+        factory = {devices.Dial: create_dial,
+                   devices.Button: create_button,
+                  }
 
         self.control_widgets = {}  # Map control IDs to Widgets
 
@@ -179,7 +203,7 @@ class Editor(QMainWindow):
             col = 0
             for row, group in enumerate(controls, start=start_row):
                 for col, control in enumerate(group, start=start_col):
-                    w = Widget(str(control))
+                    w = factory[type(control)](control)
                     grid.addWidget(w, row, col)
                     self.control_widgets[control.ID] = w
             return row + 1, col + 1
@@ -190,10 +214,10 @@ class Editor(QMainWindow):
             return make_groups(grid, l, Widget, start_row=start_row, start_col=start_col)
 
         # Macro Dials
-        row, _ = make_groups(grid, bcr.macros, WidgetButton, row) 
+        row, _ = make_groups(grid, bcr.macros, None, row) 
             
         # Main Buttons
-        row, _ = make_groups(grid, bcr.menu_buttons, WidgetButton, row) 
+        row, _ = make_groups(grid, bcr.menu_buttons, None, row) 
  
         # Main Dials
         row, _ = make_groups(grid, bcr.dialsr, QPushButton, row)
@@ -210,14 +234,23 @@ class Editor(QMainWindow):
 
         pass
 
+    def value_changed(self, ID, value):
+        self.controller.value_changed(ID, value)
 
     def reflect(self, ID, value):
         widget = self.control_widgets[ID]
-        widget.setText(str(value))
+        
+        setters = {QSlider: QSlider.setValue,
+                   QPushButton: QPushButton.setDown
+                  }
+
+        setters[type(widget)](widget, value)
+
+       # widget.setText(str(value))
         
     def reflect_all(self, view):
         for ID in self.control_widgets:
-            value = str(self.interface.input.controls[ID])
+            value = self.interface.input.controls[ID].value
             self.reflect(ID, value)
         
 
@@ -226,12 +259,8 @@ class Editor(QMainWindow):
         Called whenever any value in a target on the interface changed.
         We also get a list of control IDs mapped to that target.
         """
-        # @Question: Is target not needed?
-
-        # @TODO: Proper value inference and value setting on Widget
         for ID in IDs:
-            value = str(self.interface.input.controls[ID])
-            self.reflect(ID, value)
+            self.reflect(ID, target.value)
 
     def callback_view(self, view, new_view):
         """

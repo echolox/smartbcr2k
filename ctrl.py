@@ -19,6 +19,7 @@ def unify(value):
     else:
         return value
 
+
 class Target(object):
     """
     A mapping target. In the Interface, the IDs of the input

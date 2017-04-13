@@ -332,6 +332,9 @@ class Interface(Listener):
 
         print("Profile loaded.")
 
+        for o in self.observers:
+            o.callback_load_profile()
+
 
     def set_value(self, target, value, input_only=False, exclude_IDs=None):
         """

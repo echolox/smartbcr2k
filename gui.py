@@ -2,7 +2,7 @@ import sys
 import itertools
 from collections import namedtuple
 
-from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget, QLineEdit
+from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget, QLineEdit, QAction, QMenuBar, QMainWindow
 from PyQt5.QtGui import QImage, QPixmap, QFont, QPalette, QBrush, QColor
 from PyQt5.QtCore import Qt
 
@@ -32,8 +32,23 @@ class Controller(object):
         else:
             self.interface.add_view(view)
 
+    def save_profile(self, filename=None):
+        if filename:
+            # Save As
+            pass
+        else:
+            print("SAVING")
+            save_profile(self.interface, "profile.bcr")
 
-class Editor(QWidget):
+    def load_profile(self, filename=None):
+        # TEMP
+        print("LOADING")
+        load_profile(self.interface, "default.bcr")
+        
+        # TODO: Reload everything in UI from Profile
+
+
+class Editor(QMainWindow):
     """
     The main editor window
     """
@@ -77,8 +92,38 @@ class Editor(QWidget):
         self.interface.observers.append(self)
 
 
-        self.layout_container = QWidget()
+
+        ### Menu Bar
+        def create_action(label, shortcut, tip, callback):
+            action = QAction(label, self)
+            action.setShortcut(shortcut)
+            action.setStatusTip(tip)
+            action.triggered.connect(callback)
+            return action
+
+        menu_file_save = create_action("Save", "Ctrl+S", "Save the current profile",
+                                       self.controller.save_profile)
+        menu_file_load = create_action("Load", "Ctrl+O", "Load a profile",
+                                       self.controller.load_profile)
+
+        menu = self.menuBar()
+        menu_file = menu.addMenu("&File")
+        menu_file.addAction(menu_file_save)
+        menu_file.addAction(menu_file_load)
+
+
+        ### Status Bar
+        self.statusBar()
+
+
+
+        ### MAIN LAYOUT
         self.layout = QHBoxLayout()
+        self.layout_container = QWidget()
+        self.layout_container.setLayout(self.layout)
+        self.setCentralWidget(self.layout_container)
+
+
 
         ### View Management
         self.view_layout = QVBoxLayout()
@@ -95,8 +140,9 @@ class Editor(QWidget):
         ## View Creation
         self.view_add_text = QLineEdit()
         def create_view():
-            self.controller.create_view(self.view_add_text.text())
-            self.view_add_text.setText("")
+            if (self.view_add_text.text().strip() != ""):
+                self.controller.create_view(self.view_add_text.text())
+                self.view_add_text.setText("")
         self.view_add_text.returnPressed.connect(create_view)
         self.view_layout.addWidget(self.view_add_text)
 
@@ -160,7 +206,7 @@ class Editor(QWidget):
         grid_container.setLayout(grid)
         self.layout.addWidget(grid_container)
 
-        self.setLayout(self.layout)
+        #self.setLayout(self.layout)
 
         pass
 
@@ -204,6 +250,9 @@ class Editor(QWidget):
                 self.view_selector.setCurrentRow(index)
                 break
 
+    def callback_load_profile(self):
+        # TODO: Reflect newly loaded profile in UI
+        pass
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

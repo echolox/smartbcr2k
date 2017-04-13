@@ -9,6 +9,8 @@ class Editor(QWidget):
     """
     The main editor window
     """
+    width = 700
+    height = 700
 
     def __init__(self):
         super().__init__()
@@ -21,6 +23,7 @@ class Editor(QWidget):
             return
 
         self.setWindowTitle("Smart BCR2k Editor - Dev Edition")
+        self.resize(self.width, self.height)
         self.show()
 
         self.UI_initialized = True

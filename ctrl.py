@@ -235,6 +235,9 @@ class View(object):
         for targets in self.map.values():
             if target in targets: targets.remove(target) 
 
+    def __eq__(self, other):
+        return self.name == other.name
+
     def __repr__(self):
         return self.name
 
@@ -386,6 +389,20 @@ class Interface(Listener):
         for ID in untouched:
             self.input.reflect(ID, 0)
             
+    def add_view(self, view):
+        """
+        Adds the view to the view list if it isn't already in there.
+        Returns True if it is a new view, False if not
+        """
+        if view.name not in map(lambda v: v.name, self.views):
+            new_view = True
+            self.views.append(view)
+            for ID, targets in view.map.items():
+                for target in targets:
+                    self.add_target(target)
+            return True
+        else:
+            return False
 
     def switch_to_view(self, view):
         """
@@ -400,6 +417,9 @@ class Interface(Listener):
                 raise KeyError
             view = view[0]
 
+        if self.view and self.view == view:  # Nothing to be done
+            return
+
         self.view = view
 
         for ID, control in self.input.controls.items():
@@ -409,16 +429,12 @@ class Interface(Listener):
                 pass
 
         print("[%s] Switched to %s" % (self, view))
-        if view not in self.views:
-            self.views.append(view)
-            for ID, targets in view.map.items():
-                for target in targets:
-                    self.add_target(target)
+        new_view = self.add_view(view)
 
         self.reflect_all()
 
         for o in self.observers:
-            o.callback_view(self.view)
+            o.callback_view(self.view, new_view)
 
     def add_target(self, target):
         """

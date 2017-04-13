@@ -2,11 +2,11 @@ import sys
 import itertools
 from collections import namedtuple
 
-from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget
+from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget, QLineEdit
 from PyQt5.QtGui import QImage, QPixmap, QFont, QPalette, QBrush, QColor
 from PyQt5.QtCore import Qt
 
-from ctrl import Interface, load_profile, save_profile
+from ctrl import Interface, View, load_profile, save_profile
 from devices import BCR2k, MidiLoop
 
 Vector2 = namedtuple("Vector2", ["x", "y"])
@@ -20,22 +20,37 @@ class Controller(object):
         self.interface = interface
         self.editor = editor
 
+    def create_view(self, name, switch=True, copy=None):
+        """
+        Creates a new view with the provided name.
+        Another view can be provided to duplicate (except for the name)
+        """
+        # @Feature: Copying views
+        view = View(self.interface.input, name=name)
+       # self.editor.view_selector.addItem(view.name)
+        if switch:
+            self.interface.switch_to_view(view)
+        else:
+            self.interface.add_view(view)
+        
+
 
 class Editor(QWidget):
     """
     The main editor window
     """
-    position = Vector2(-900, 250)
+    position = Vector2(-950, 250)
     size = Vector2(850, 700)
     title = "Smart BCR2k Editor - Dev Edition"
 
-    def __init__(self, interface=None):
+    def __init__(self, interface=None, controller=None):
         super().__init__()
         self.UI_initialized = False
         self.interface = interface
+        self.controller = controller
 
-        if self.interface:
-            self.initialize(self.interface)
+        if self.interface and self.controller:
+            self.initialize(self.interface, self.controller)
 
     def init_UI(self):
         """
@@ -52,11 +67,13 @@ class Editor(QWidget):
         self.show()
         self.UI_initialized = True
 
-    def initialize(self, interface):
+    def initialize(self, interface, controller):
         """
         Initialize UI elements dependent on the interface and input device
         """
         self.init_UI()
+
+        self.controller = controller
 
         self.interface = interface
         self.interface.observers.append(self)
@@ -65,14 +82,30 @@ class Editor(QWidget):
         self.layout_container = QWidget()
         self.layout = QHBoxLayout()
 
+        # View Management
+        self.view_layout = QVBoxLayout()
+
         self.view_selector = QListWidget()
         self.view_selector.addItems((view.name for view in self.interface.views))
-
         self.view_selector.setCurrentRow(self.interface.views.index(self.interface.view))
-
         self.view_selector.currentItemChanged.connect(
             lambda index: self.interface.switch_to_view(self.view_selector.currentItem().text()))
-        self.layout.addWidget(self.view_selector)
+        self.view_selector.setMinimumWidth(100)
+        self.view_layout.addWidget(self.view_selector)
+
+        self.view_add_text = QLineEdit()
+        self.view_layout.addWidget(self.view_add_text)
+
+        self.view_add_button = QPushButton("+")
+        self.view_add_button.clicked.connect(
+            lambda: self.controller.create_view(self.view_add_text.text()))
+        self.view_layout.addWidget(self.view_add_button)
+
+
+        self.view_container = QWidget()
+        self.view_container.setLayout(self.view_layout)
+        self.layout.addWidget(self.view_container)
+
 
 
         grid = QGridLayout()
@@ -149,13 +182,15 @@ class Editor(QWidget):
             value = str(self.interface.input.controls[ID])
             self.reflect(ID, value)
 
-    def callback_view(self, view):
+    def callback_view(self, view, new_view):
         """
         Called whenever the active view in the interface has changed
         """
-
         # Reflect values on all controls
         self.reflect_all(view) 
+
+        if new_view:
+            self.view_selector.addItem(view.name)
 
         # Reflect current View in the general UI
         for index in range(self.view_selector.count()):
@@ -182,6 +217,6 @@ if __name__ == '__main__':
     controller = Controller(interface, editor)
 
     # Initialize GUI
-    editor.initialize(interface)
+    editor.initialize(interface, controller)
 
     sys.exit(app.exec_())

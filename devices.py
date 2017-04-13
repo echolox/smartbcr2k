@@ -5,8 +5,8 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
-DEFAULT_IN_PORT = 4
-DEFAULT_OUT_PORT = 5
+DEFAULT_IN_PORT = 7
+DEFAULT_OUT_PORT = 8
 FULL = 127
 
 list_input_ports()

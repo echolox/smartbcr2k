@@ -25,8 +25,8 @@ class Editor(QWidget):
     """
     The main editor window
     """
-    position = Vector2(-750, 250)
-    size = Vector2(700, 700)
+    position = Vector2(-900, 250)
+    size = Vector2(850, 700)
     title = "Smart BCR2k Editor - Dev Edition"
 
     def __init__(self, interface=None):
@@ -38,6 +38,9 @@ class Editor(QWidget):
             self.initialize(self.interface)
 
     def init_UI(self):
+        """
+        Initialize input device agnostic UI elements
+        """
         if self.UI_initialized:
             return
 
@@ -50,9 +53,13 @@ class Editor(QWidget):
         self.UI_initialized = True
 
     def initialize(self, interface):
+        """
+        Initialize UI elements dependent on the interface and input device
+        """
         self.init_UI()
 
         self.interface = interface
+        self.interface.observers.append(self)
         grid = QGridLayout()
         
         # Do input device specific stuff
@@ -67,20 +74,21 @@ class Editor(QWidget):
         WidgetDial = QPushButton
         WidgetButton = QPushButton
 
-        control_widgets = {}  # Map controls to Widgets
+        self.control_widgets = {}  # Map control IDs to Widgets
 
         def make_groups(grid, controls, Widget, start_row=0, start_col=0):
             row = 0
             col = 0
             for row, group in enumerate(controls, start=start_row):
                 for col, control in enumerate(group, start=start_col):
-                    w = grid.addWidget(Widget(str(control)), row, col)
-                    control_widgets[control] = w
+                    w = Widget(str(control))
+                    grid.addWidget(w, row, col)
+                    self.control_widgets[control.ID] = w
             return row + 1, col + 1
 
         def make_group(grid, controls, Widget, length, start_row=0, start_col=0):
             args = [iter(controls)] * length
-            l = list( itertools.zip_longest(*args))
+            l = (itertools.zip_longest(*args))
             return make_groups(grid, l, Widget, start_row=start_row, start_col=start_col)
 
         # Macro Dials
@@ -103,6 +111,16 @@ class Editor(QWidget):
 
 
         pass
+
+    def trigger_callback(self, target, IDs):
+        """
+        Called whenever any value in a target on the interface changed.
+        We also get a list of control IDs mapped to that target.
+        """
+        for ID in IDs:
+            widget = self.control_widgets[ID]
+            widget.setText(str(self.interface.input.controls[ID]))
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

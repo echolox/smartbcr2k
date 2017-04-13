@@ -178,7 +178,8 @@ class Button(Control):
                 self._value = self.minval
                 self.state = False
 
-            self.parent.send(self.ID, self._value)
+            self.reflect(self._value)
+#            self.parent.send(self.ID, self._value)
             self.parent.broadcast(self.ID, self.state)
             return self._value
         else:
@@ -203,7 +204,6 @@ class Button(Control):
             else:
                 self.ignore = 0
         self.parent.send(self.ID, self._value)
-
 
 class Dial(Control):
     pass
@@ -247,7 +247,7 @@ class BCR2k(Device):
             self.command_buttons.append(self.controls[i])
 
 
-    def set_control(self, ID, value, reflect=False):
+    def set_control(self, ID, value):
         try:
             self.controls[ID].value = value
         except KeyError:

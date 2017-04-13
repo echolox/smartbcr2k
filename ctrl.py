@@ -27,16 +27,18 @@ class Target(object):
 
     trigger_vals = list(range(128))
 
-    def __init__(self, name, parent):
+    def __init__(self, name, parent, callback=None):
         self.name = name
         self.parent = parent
+        self.trigger_callback = callback
 
     def trigger(self, value):
         """
         Their trigger method is then called
         with the value transmitted by the Control.
         """
-        raise NotImplemented
+        if self.trigger_callback:
+            self.trigger_callback(self)
 
     def serialize(self, ID):
         return {"name": self.name,
@@ -58,8 +60,8 @@ class SwitchView(Target):
     when triggered.
     """
 
-    def __init__(self, name, parent, view):
-        super(SwitchView, self).__init__(name, parent)
+    def __init__(self, name, parent, view, **kwargs):
+        super().__init__(name, parent, **kwargs)
         if type(view) == str:
             self.view_name = view
         else:
@@ -69,6 +71,7 @@ class SwitchView(Target):
 
     def trigger(self, value):
         self.parent.switch_to_view(self.view_name)
+        super().trigger(value)
 
     def serialize(self, *args, **kwargs):
         s = super(SwitchView, self).serialize(*args, **kwargs) 
@@ -89,8 +92,8 @@ class Parameter(Target):
     Control Change midi signal on the configured (output) device.
     Button values are (for now) hardcoded to 0 for Off and 127 for On.
     """
-    def __init__(self, name, parent, cc, initial=0, is_button=False):
-        super(Parameter, self).__init__(name, parent)
+    def __init__(self, name, parent, cc, initial=0, is_button=False, **kwargs):
+        super().__init__(name, parent, **kwargs)
         self.cc = cc
         self.value = initial
         self.is_button = is_button
@@ -115,6 +118,7 @@ class Parameter(Target):
         self.value = value
         # @Robustness: This is kinda wonky
         self.parent.output.send(self.cc, self.value)
+        super().trigger(value)
 
     def from_dict(self, d):
         super(Parameter, self).from_dict(d)
@@ -197,7 +201,7 @@ class View(object):
             self.configuration[ID] = conf
 
 
-        # Map IDs of a device's controls to Parameters
+        # Map IDs of a device's controls to Targets
         self.map = defaultdict(list)
 
 
@@ -266,6 +270,8 @@ class Interface(Listener):
 
         self.input.listeners.append(self)
         self.output.listeners.append(self)
+
+        self.observers = []
 
         self.parameter_maker = ParameterMaker(self, 1)
         self.view_maker      = ViewMaker(self)
@@ -415,6 +421,7 @@ class Interface(Listener):
         Add a configured target. This method checks for duplicates and
         ignores them if detected.
         """
+        target.trigger_callback = self.trigger_callback
         if target.name in self.targets:
             print("Target with same name already exists! Ignoring...")
             return
@@ -455,7 +462,6 @@ class Interface(Listener):
             print("No target configured for ID %i" % ID)
             return
 
-
         for target in targets:
             # Some targets should not be triggered on an Off, False, 0 value
             if unify(value) in target.trigger_vals:
@@ -471,6 +477,14 @@ class Interface(Listener):
                 elif sender == self.output:
                     # Just reflect the value in both target and on the input device
                     self.set_value(target, value, input_only=True)
+
+    def trigger_callback(self, target):
+        """
+        Called by a target when it has been triggered
+        """
+        IDs_mapped = [ID for ID, targets in self.view.map.items() if target in targets]
+        for o in self.observers:
+            o.trigger_callback(target, IDs_mapped)
 
     def __repr__(self):
         return "Interface"

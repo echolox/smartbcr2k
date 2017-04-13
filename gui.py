@@ -27,12 +27,10 @@ class Controller(object):
         """
         # @Feature: Copying views
         view = View(self.interface.input, name=name)
-       # self.editor.view_selector.addItem(view.name)
         if switch:
             self.interface.switch_to_view(view)
         else:
             self.interface.add_view(view)
-        
 
 
 class Editor(QWidget):
@@ -82,7 +80,7 @@ class Editor(QWidget):
         self.layout_container = QWidget()
         self.layout = QHBoxLayout()
 
-        # View Management
+        ### View Management
         self.view_layout = QVBoxLayout()
 
         self.view_selector = QListWidget()
@@ -93,21 +91,28 @@ class Editor(QWidget):
         self.view_selector.setMinimumWidth(100)
         self.view_layout.addWidget(self.view_selector)
 
+
+        ## View Creation
         self.view_add_text = QLineEdit()
+        def create_view():
+            self.controller.create_view(self.view_add_text.text())
+            self.view_add_text.setText("")
+        self.view_add_text.returnPressed.connect(create_view)
         self.view_layout.addWidget(self.view_add_text)
 
         self.view_add_button = QPushButton("+")
-        self.view_add_button.clicked.connect(
-            lambda: self.controller.create_view(self.view_add_text.text()))
+        self.view_add_button.clicked.connect(create_view)
         self.view_layout.addWidget(self.view_add_button)
 
 
+        ## View Layout
         self.view_container = QWidget()
         self.view_container.setLayout(self.view_layout)
         self.layout.addWidget(self.view_container)
 
 
 
+        ### Device Management
         grid = QGridLayout()
         # Do input device specific stuff
         # @Flexibility: Move this out of here and support multiple controllers

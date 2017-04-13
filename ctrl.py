@@ -439,7 +439,6 @@ class Interface(Listener):
         self.update_thread = Thread(target=main_loop, daemon=True)
         self.update_thread.start()
 
-
     def update(self, time):
         for m in self.modifiers:
             m.tick(time)

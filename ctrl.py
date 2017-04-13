@@ -414,7 +414,11 @@ class Interface(Listener):
             for ID, targets in view.map.items():
                 for target in targets:
                     self.add_target(target)
+
         self.reflect_all()
+
+        for o in self.observers:
+            o.callback_view(self.view)
 
     def add_target(self, target):
         """
@@ -484,7 +488,7 @@ class Interface(Listener):
         """
         IDs_mapped = [ID for ID, targets in self.view.map.items() if target in targets]
         for o in self.observers:
-            o.trigger_callback(target, IDs_mapped)
+            o.callback_value(IDs_mapped, target)
 
     def __repr__(self):
         return "Interface"

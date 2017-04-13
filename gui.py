@@ -105,21 +105,40 @@ class Editor(QWidget):
 
         # End input device specific stuff
 
-
-
         self.setLayout(grid)
-
 
         pass
 
-    def trigger_callback(self, target, IDs):
+
+    def reflect(self, ID, value):
+        widget = self.control_widgets[ID]
+        widget.setText(str(value))
+        
+    def reflect_all(self, view):
+        for ID in self.control_widgets:
+            value = str(self.interface.input.controls[ID])
+            self.reflect(ID, value)
+        
+
+    def callback_value(self, IDs, target):
         """
         Called whenever any value in a target on the interface changed.
         We also get a list of control IDs mapped to that target.
         """
+        # @Question: Is target not needed?
+
+        # @TODO: Proper value inference and value setting on Widget
         for ID in IDs:
-            widget = self.control_widgets[ID]
-            widget.setText(str(self.interface.input.controls[ID]))
+            value = str(self.interface.input.controls[ID])
+            self.reflect(ID, value)
+
+    def callback_view(self, view):
+        """
+        Called whenever the active view in the interface has changed
+        """
+
+        # Reflect values on all controls
+        self.reflect_all(view) 
 
 
 if __name__ == '__main__':

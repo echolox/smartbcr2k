@@ -155,8 +155,7 @@ class Parameter(ValueTarget):
                 else:
                     value = 0
             self.value = value
-        # @Robustness: This is kinda wonky
-        self.parent.output.send(self.cc, self.value)
+        self.parent.reflect_value(self)
         super().trigger(self.value)
 
     def from_dict(self, d):
@@ -391,7 +390,7 @@ class Interface(Listener):
         That's what target.trigger() is for.
         """
         # Inform input controls mapped to this target about the change
-        self.reflect_value(target, value)
+        self.reflect_value(target)
 
         # Prevent feedback loop, for example if the source of the
         # new value was the output device itself
@@ -402,7 +401,7 @@ class Interface(Listener):
         else:
             target.trigger(value) 
 
-    def reflect_value(self, target, value, exclude_IDs=None):
+    def reflect_value(self, target, exclude_IDs=None):
         """
         Inform the input device of a value change, possibly excluding
         certain IDs. Only controls mapped to the given target will
@@ -410,7 +409,7 @@ class Interface(Listener):
         """
         for ID in self.view.find_IDs_by_target(target):
             if not exclude_IDs or ID not in exclude_IDs:
-                self.input.reflect(ID, value)
+                self.input.reflect(ID, target.value)
 
 
     def reflect_all(self):
@@ -535,7 +534,7 @@ class Interface(Listener):
                     # Multiple input controls might be mapped to this
                     # so let's reflect on the input device but exclude the
                     # ID that issued the value change
-                    self.reflect_value(target, value, exclude_IDs=[ID])
+                    self.reflect_value(target, exclude_IDs=[ID])
                 elif sender == self.output:
                     # Just reflect the value in both target and on the input device
                     self.set_value(target, value, input_only=True)
@@ -580,6 +579,10 @@ def test2(i):
     for macro in i.input.macros[0][1:]:
         i.view.map_this(macro.ID, t)
 
+    from modifiers import LFOSine
+    s = LFOSine(frequency=0.5)
+    s.target(t)
+
     init_view = i.view
     _, second_view = i.quick_view(105)
     i.quick_view(105, to_view=init_view, on_view=second_view)
@@ -589,6 +592,7 @@ def test2(i):
     i.quick_parameter(82)
     t = i.quick_parameter(83)
     i.view.map_this(84, t)
+
 
     # Command button momentary
     i.quick_parameter(106)
@@ -618,7 +622,9 @@ def test2(i):
         json.dump(p, outfile)
 
     while True:
+        s.tick(time.time())
         bcr.update(time.time())
+        time.sleep(1.0 / 30)
 
 
 def fun(bcr):

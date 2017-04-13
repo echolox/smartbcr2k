@@ -11,6 +11,9 @@ class Modifier(object):
     """
     A modifier keeps a list of targets which it periodically updates
     with a value to modify the targets true value with. Think of LFOs.
+
+    To create a new modifier, subclass this Class and override the
+    method calculate.
     """
 
     def __init__(self, amplitude=MAX_MOD):
@@ -19,7 +22,7 @@ class Modifier(object):
 
         self.targets = ddict(lambda: 0.0)  # target object -> [-1, 1]
     
-    def target(self, target, power=0.0):
+    def target(self, target, power=1.0):
         """
         Expects a target object and a power in the range [-1, 1]
         """

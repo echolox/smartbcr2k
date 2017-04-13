@@ -36,7 +36,10 @@ class Modifier(object):
         Stop modifying the provided target
         """
         self.target(target, 0.0)
-        target.remove_modifier(self)
+        try:
+            target.remove_modifier(self)
+        except AttributeError as e:
+            print(e)
 
     def clear_targets(self):
         """
@@ -74,9 +77,14 @@ class Modifier(object):
         Calculates a new modifier value and applies it to all its targets
         """
         self._value = self.calculate(t)
+        modvalue = self.modvalue()
         for target, power in self.targets.items():
-            target.modify(self, self.modvalue() * power)
-        return self.modvalue()
+            try:
+                target.modify(self, modvalue * power)
+            except AttributeError as e:
+                print(e)
+                
+        return modvalue
 
     def calculate(self, t):
         raise NotImplementedError
@@ -97,9 +105,10 @@ if __name__ == '__main__':
     s = LFOSine(0.3)
 
     t = ValueTarget("Testing", None)
+    t.value = 64
 
     s.target(t, power=1.0)
-    r.target(t, power=1.0)
+    r.target(t, power=-1.0)
 
     for i in range(10):
         print("LFO1:", r.tick(i))

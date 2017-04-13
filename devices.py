@@ -229,7 +229,7 @@ class BCR2k(Device):
         self.menu_buttons = [[],[]]
         for i in range(65, 80 + 1):
             self.controls[i] = Button(i, self, toggle=True)
-            self.macro_buttons[(i-65) // 8].append(self.controls[i])
+            self.menu_buttons[(i-65) // 8].append(self.controls[i])
 
         self.dialsc = [[] for _ in range(8)]
         self.dialsr = [[] for _ in range(3)]
@@ -242,7 +242,7 @@ class BCR2k(Device):
             self.dialsr[z // 8].append(self.controls[i])
 
         self.command_buttons = []
-        for i in range(104, 108 + 1):
+        for i in range(105, 108 + 1):
             self.controls[i] = Button(i, self, toggle=False)
             self.command_buttons.append(self.controls[i])
 

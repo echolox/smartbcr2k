@@ -2,7 +2,7 @@ import sys
 import itertools
 from collections import namedtuple
 
-from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox
+from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget
 from PyQt5.QtGui import QImage, QPixmap, QFont, QPalette, QBrush, QColor
 from PyQt5.QtCore import Qt
 
@@ -60,8 +60,22 @@ class Editor(QWidget):
 
         self.interface = interface
         self.interface.observers.append(self)
+
+
+        self.layout_container = QWidget()
+        self.layout = QHBoxLayout()
+
+        self.view_selector = QListWidget()
+        self.view_selector.addItems((view.name for view in self.interface.views))
+
+        self.view_selector.setCurrentRow(self.interface.views.index(self.interface.view))
+
+        self.view_selector.currentItemChanged.connect(
+            lambda index: self.interface.switch_to_view(self.view_selector.currentItem().text()))
+        self.layout.addWidget(self.view_selector)
+
+
         grid = QGridLayout()
-        
         # Do input device specific stuff
         # @Flexibility: Move this out of here and support multiple controllers
 
@@ -104,8 +118,11 @@ class Editor(QWidget):
         row, _ = make_group(grid, bcr.command_buttons, QPushButton, 2, row-2, rowlen+1)
 
         # End input device specific stuff
+        grid_container = QWidget()
+        grid_container.setLayout(grid)
+        self.layout.addWidget(grid_container)
 
-        self.setLayout(grid)
+        self.setLayout(self.layout)
 
         pass
 
@@ -139,6 +156,13 @@ class Editor(QWidget):
 
         # Reflect values on all controls
         self.reflect_all(view) 
+
+        # Reflect current View in the general UI
+        for index in range(self.view_selector.count()):
+            item = self.view_selector.item(index)
+            if item.text() == view.name:
+                self.view_selector.setCurrentRow(index)
+                break
 
 
 if __name__ == '__main__':

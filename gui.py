@@ -10,7 +10,7 @@ from devices import BCR2k, MidiLoop
 
 Vector2 = namedtuple("Vector2", ["x", "y"])
 
-class Controller(Object):
+class Controller(object):
     """
     Communicates between Editor (GUI) and Interface (Model)
     """
@@ -31,8 +31,6 @@ class Editor(QWidget):
     def __init__(self):
         super().__init__()
         self.UI_initialized = False
-        self.init_UI()
-
 
     def init_UI(self):
         if self.UI_initialized:
@@ -45,15 +43,29 @@ class Editor(QWidget):
 
         self.UI_initialized = True
 
+    def initialize(self, controller):
+        self.init_UI()
+
+        # Do Controller specific stuff
+        pass
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    main_window = Editor()
 
+    # Setup Devices and Interface
     bcr = BCR2k()
     loop = MidiLoop()
 
     interface = Interface(bcr, loop)
-    interface.load_profile(
+    load_profile(interface, "default.bcr")
 
+    # Create GUI
+    editor = Editor()
+
+    # Create Controller
+    controller = Controller(interface, editor)
+
+    # Initialize GUI
+    editor.initialize(controller)
 
     sys.exit(app.exec_())

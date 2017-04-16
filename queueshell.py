@@ -12,7 +12,7 @@ to be called periodically, such a method can be provided in the Shell constructo
 from queue import Queue, Empty
 from time import sleep
 from threading import Thread
-
+from uuid import uuid4
 
 yield_thread = lambda: sleep(0)
 
@@ -23,12 +23,24 @@ class WrappedCall(object):
     args and kwargs are placed on the queue to be consumed
     inside the shell's main_loop.
     """
-    def __init__(self, method, queue):
+    def __init__(self, method, queue, result_queue):
         self._m = method
         self._q = queue
+        self._rq = result_queue
 
     def __call__(self, *args, **kwargs):
-        self._q.put_nowait((self._m, args, kwargs))
+        if "_returns" in kwargs and kwargs["_returns"]:
+            # We want the return value of the method and
+            # therefore block after placing the call
+            # and wait for a result on the shell's
+            # result queue.
+            del kwargs["_returns"]
+            self._q.put_nowait((self._m, self._rq, args, kwargs))
+            return self._rq.get() 
+        else:
+            # This method call isn't expected to return a
+            # value so we can won't block
+            pass
 
 
 class Shell(object):
@@ -74,8 +86,9 @@ class Shell(object):
             try:
                 # Handle incoming calls from the queue
                 while True:
-                    call, args, kwargs = self._q.get_nowait()
-                    call(*args, **kwargs)
+                    call, result_queue, args, kwargs = self._q.get_nowait()
+                    result = call(*args, **kwargs)
+                    result_queue.put(result)
             except Empty:
                 # until nothing's left on it
                 pass
@@ -94,10 +107,11 @@ class Shell(object):
         """
         if name in Shell._internals:
             return self.__getattribute__(name)
-        o = self._o
+
         attr = self._o.__getattribute__(name)
+
         if callable(attr):
-            return WrappedCall(attr, self._q) 
+            return WrappedCall(attr, self._q, Queue()) 
         else:
             return attr
 
@@ -116,12 +130,37 @@ if __name__ == "__main__":
             self.x = 10
 
         def test(self, y):
-            print(self.x, y * self.x)
+            print("IN TEST", self.x, y * self.x)
+
+        def more(self):
+            return self.x * -100
+
+        def full(self, a, b="Dan"):
+            print("Hey I'm", b,", my a is", a, "and my x is", self.x)
+            print("I'm now returning some fixed value")
+            return 55
 
     s = Shell(A())
+
+    print("SETTING X")
     s.x = 500
+    print()
+
+    print("GETTING X")
     print(s.x)
+    print()
+
+    print("CALLING TEST")
     s.test(25)
+    print()
+
+    print("RETURN TEST")
+    print(s.more(_returns=True))
+    print()
+
+    print("FULL TEST")
+    print(s.full(11, b="Arin", _returns=True))
+    print()
 
     try:
         while True:

@@ -189,8 +189,8 @@ class Listener(object):
 
 
 if __name__ == "__main__":
-    list_input_ports()
-    list_output_ports()
+#    list_input_ports()
+#    list_output_ports()
     bcr = BCR2k(auto_start=True)
 
     while True:

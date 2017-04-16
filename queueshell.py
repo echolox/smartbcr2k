@@ -16,32 +16,25 @@ from uuid import uuid4
 
 yield_thread = lambda: sleep(0)
 
-class WrappedCall(object):
+class ShellResult(Queue):
+    pass
+
+
+class ShellCall(object):
     """
     Wraps a bound method that doesn't expect a return value.
     When the wrapped method is called, the bound method and
     args and kwargs are placed on the queue to be consumed
     inside the shell's main_loop.
     """
-    def __init__(self, method, queue, result_queue):
+    def __init__(self, method, queue):
         self._m = method
         self._q = queue
-        self._rq = result_queue
 
     def __call__(self, *args, **kwargs):
-        if "_returns" in kwargs and kwargs["_returns"]:
-            # We want the return value of the method and
-            # therefore block after placing the call
-            # and wait for a result on the shell's
-            # result queue.
-            del kwargs["_returns"]
-            self._q.put_nowait((self._m, self._rq, args, kwargs))
-            return self._rq.get() 
-        else:
-            # This method call isn't expected to return a
-            # value so we can won't block
-            self._q.put_nowait((self._m, self._rq, args, kwargs))
-            pass
+        result = ShellResult()
+        self._q.put_nowait((self._m, result, args, kwargs))
+        return result
 
 
 class Shell(object):
@@ -87,9 +80,8 @@ class Shell(object):
             try:
                 # Handle incoming calls from the queue
                 while True:
-                    call, result_queue, args, kwargs = self._q.get_nowait()
-                    result = call(*args, **kwargs)
-                    result_queue.put(result)
+                    call, result, args, kwargs = self._q.get_nowait()
+                    result.put(call(*args, **kwargs))
             except Empty:
                 # until nothing's left on it
                 pass
@@ -112,7 +104,7 @@ class Shell(object):
         attr = self._o.__getattribute__(name)
 
         if callable(attr):
-            return WrappedCall(attr, self._q, Queue()) 
+            return ShellCall(attr, self._q) 
         else:
             return attr
 
@@ -156,11 +148,11 @@ if __name__ == "__main__":
     print()
 
     print("RETURN TEST")
-    print(s.more(_returns=True))
+    print(s.more().get())
     print()
 
     print("FULL TEST")
-    print(s.full(11, b="Arin", _returns=True))
+    print(s.full(11, b="Arin").get())
     print()
 
     try:

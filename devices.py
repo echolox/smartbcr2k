@@ -112,6 +112,12 @@ class Device(ControlParent):
                 self.send(blink, self.blink_state * self.controls[blink].maxval)
             self.last_blink = t
 
+    def get_control(self, ID):
+        try:
+            return self.controls[ID]
+        except KeyError:
+            eprint("Control with ID %s not found" % ID)
+
 
     def set_control(self, ID, value, from_input=False):
         """
@@ -119,35 +125,37 @@ class Device(ControlParent):
         the hardware device.
         """
         try:
-            # The Control might implement some further logic,
-            # which can result in a different value being set
-            # than what we are trying to set here (think min/max-
-            # values or ignoring button presses).
-            real_value = self.controls[ID].value(value)
-
-            # Therefore we get the real_value reported back from
-            # the control which we can then reflect on the input device
-            # If None was returned, the control wants us to ignore it
-            if real_value is None:
-                return
-
-            # Otherwise, depending on where the control change came from
-            # inform the hardware devices or possible listeners
-
-            # If the cc didn't come from the hardware, or if it did but the
-            # real_value is different that what we tried to set the virtual
-            # control to, send that cc to the input
-            if not from_input or real_value != value:
-                self.send_to_device(ID, real_value)
-
-            # If it came from the input device or the value we tried to set is
-            # different than what the virutal control assumed, issue the cc
-            # to all listeners
-            if from_input or real_value != value:
-                self.control_changed(ID, real_value)
-             
+            control = self.controls[ID]
         except KeyError:
-            print("Control with ID %s not found" % ID)
+            eprint("Control with ID %s not found" % ID)
+
+        # The Control might implement some further logic,
+        # which can result in a different value being set
+        # than what we are trying to set here (think min/max-
+        # values or ignoring button presses).
+        real_value = control.value(value)
+
+        # Therefore we get the real_value reported back from
+        # the control which we can then reflect on the input device
+        # If None was returned, the control wants us to ignore it
+        if real_value is None:
+            return
+
+        # Otherwise, depending on where the control change came from
+        # inform the hardware devices or possible listeners
+
+        # If the cc didn't come from the hardware, or if it did but the
+        # real_value is different that what we tried to set the virtual
+        # control to, send that cc to the input
+        if not from_input or real_value != value:
+            self.send_to_device(ID, real_value)
+
+        # If it came from the input device or the value we tried to set is
+        # different than what the virutal control assumed, issue the cc
+        # to all listeners
+        if from_input or real_value != value:
+            self.control_changed(ID, real_value)
+         
 
     def input_callback(self, event):
         """
@@ -244,6 +252,9 @@ if __name__ == "__main__":
     q = Queue()
     sbcr.add_listener(q)
     sbcr.set_control(90, 127)
+    print(bcr)
+    c = sbcr.get_control(91).get()
+    print(c)
 
     try:
         while True:

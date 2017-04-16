@@ -5,7 +5,7 @@ from math import sin
 from targets import ValueTarget
 from devices import clip
 
-from util import FULL
+from util import FULL, eprint
 
 MIN_MOD = 0
 MAX_MOD = 127
@@ -38,7 +38,7 @@ class Modifier(object):
             try:
                 target = all_targets[target_name]
             except KeyError as e:
-                print(e)
+                eprint(e)
                 continue
             self.target(target, power)
 
@@ -62,7 +62,7 @@ class Modifier(object):
         try:
             target.remove_modifier(self)
         except AttributeError as e:
-            print(e)
+            eprint(e)
 
     def clear_targets(self):
         """
@@ -105,7 +105,7 @@ class Modifier(object):
             try:
                 target.modify(self, modvalue * power)
             except AttributeError as e:
-                print(e)
+                eprint(e)
                 
         return modvalue
 

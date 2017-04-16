@@ -255,16 +255,14 @@ if __name__ == "__main__":
 
     bcr.command(Device.set_control, 90, 127)
 
-    while True:
-        try:
-
+    try:
+        while True:
             try:
                 event, *data = q.get_nowait()
                 print(event.name, data)
             except Empty:
                 pass
-
-        except KeyboardInterrupt:
-            break
+    except KeyboardInterrupt:
+        pass
 
     bcr.command(Device.remove_listener, q)

@@ -1,6 +1,8 @@
 import time
 import rtmidi
 import json
+import sys
+from queue import Queue, Empty, Full
 
 from threading import Thread
 
@@ -13,10 +15,10 @@ from collections import defaultdict as ddict
 from rtmidi.midiconstants import CONTROL_CHANGE
 
 from targets import get_target, Parameter, SwitchView
-from devices import BCR2k, MidiLoop, Listener, FULL, clip
+from devices import Device, BCR2k, MidiLoop, Listener, DeviceEvent
 from modifiers import get_modifier
 
-from util import keys_to_ints, unify
+from util import keys_to_ints, unify, eprint
 
 
 class Exhausted(Exception):
@@ -146,7 +148,7 @@ class Interface(Listener):
     needs to be reflected on the hardware) is sent back to the input device,
     depending on if any of its controls are currently mapped to the changed Parameter.
     """
-    def __init__(self, devin, devout, initview=None):
+    def __init__(self, devin, devout, initview=None, auto_start=True):
         """
         Initialize the Interface with the provided input and output device
         and a View. If no View is provided and empty View will be produced.
@@ -160,8 +162,12 @@ class Interface(Listener):
         self.view = initview if initview else View(self.input, "Init")
         self.views = [self.view]
 
-        self.input.listeners.append(self)
-        self.output.listeners.append(self)
+        self.device_event_dispatch = {
+            DeviceEvent.CC: self.inform,
+        }
+        self.device_q = Queue()
+        self.input.command(Device.add_listener, self.device_q)
+        self.output.command(Device.add_listener, self.device_q)
 
         self.observers = []
 
@@ -170,7 +176,11 @@ class Interface(Listener):
         self.parameter_maker = ParameterMaker(self, 1)
         self.view_maker      = ViewMaker(self)
 
-        self.update_thread = None
+        self.update_thread = Thread(target=self.main_loop, daemon=True)
+
+
+        if auto_start:
+            self.start()
 
     def make_profile(self):
         p = {"input": self.input.name,
@@ -220,7 +230,7 @@ class Interface(Listener):
                     try:
                         T = get_target(t["type"])
                     except KeyError as e:
-                        print(e)
+                        eprint(e)
                         continue
                     target = T.blank(self)
                     target.from_dict(t)
@@ -233,7 +243,7 @@ class Interface(Listener):
             try:
                 M = get_modifier(m["type"])
             except KeyError as e:
-                print(e)
+                eprint(e)
                 continue
             mod = M()
             mod.from_dict(m, self.targets)
@@ -283,7 +293,7 @@ class Interface(Listener):
         """
         for ID in self.view.find_IDs_by_target(target):
             if not exclude_IDs or ID not in exclude_IDs:
-                self.input.reflect(ID, target.value)
+                self.input.command(Device.set_control, ID, target.value)
 
 
     def reflect_all(self):
@@ -298,11 +308,11 @@ class Interface(Listener):
                     getattr(target, "value")
                 except AttributeError:
                     continue
-                self.input.reflect(ID, target.value)
+                self.input.command(Device.set_control, ID, target.value)
                 untouched.remove(ID)
 
         for ID in untouched:
-            self.input.reflect(ID, 0)
+            self.input.command(Device.set_control, ID, 0)
             
     def add_view(self, view):
         """
@@ -431,18 +441,30 @@ class Interface(Listener):
             pass
 
     def start(self):
-        def main_loop():
-            while True:
-                self.update(time.time())
-                time.sleep(1.0 / 30)
-
-        self.update_thread = Thread(target=main_loop, daemon=True)
         self.update_thread.start()
 
-    def update(self, time):
-        for m in self.modifiers:
-            m.tick(time)
-        self.input.update(time)
+    def main_loop(self):
+        time_now = 0
+        while True:
+            time_now = time.time()
+
+            # Handle DeviceEvent queue
+            try:
+                event, *data = self.device_q.get_nowait()
+                try:
+                    self.device_event_dispatch[event](*data)
+                except KeyError:
+                    print(self, "Cannot handle event of type", event.name, file=sys.stderr)
+            except Empty:
+                pass
+
+            # Handle Other Event Queue
+
+
+            for m in self.modifiers:
+                m.tick(time_now)
+
+            time.sleep(0)
 
     def __repr__(self):
         return "Interface"
@@ -477,6 +499,7 @@ def test2(i):
     for macro in i.input.macros[0][1:]:
         i.view.map_this(macro.ID, t)
 
+    return
     from modifiers import LFOSine
     s = LFOSine(frequency=1)
     i.add_modifier(s)
@@ -516,7 +539,6 @@ def test2(i):
 
     save_profile(i, "default.bcr")
 
-    i.start()
 
 
 def fun(bcr):
@@ -533,11 +555,16 @@ def fun(bcr):
 if __name__ == "__main__":
     bcr = BCR2k()
     loop = MidiLoop()
+    print("Devices started")
 
     interface = Interface(bcr, loop)
+    print("Interface started")
 
 #    fun(bcr)
     test2(interface)
 
-    while True:
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
         pass

@@ -4,6 +4,7 @@ import json
 import sys
 from queue import Queue, Empty, Full
 
+import traceback
 from threading import Thread
 
 from importlib import import_module
@@ -17,8 +18,9 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 from targets import get_target, Parameter, SwitchView
 from devices import Device, BCR2k, MidiLoop, Listener, DeviceEvent
 from modifiers import get_modifier
+from queueshell import Shell
 
-from util import keys_to_ints, unify, eprint
+from util import keys_to_ints, unify, eprint, dprint
 
 
 class Exhausted(Exception):
@@ -156,8 +158,8 @@ class Interface(Listener):
         The Interface attaches itself as a listener to both input and output
         devices.
         """
-        self.input = devin
-        self.output = devout
+        self.input = Shell(devin, devin.update)
+        self.output = Shell(devout, devout.update)
         self.targets = {}
         self.view = initview if initview else View(self.input, "Init")
         self.views = [self.view]
@@ -166,8 +168,8 @@ class Interface(Listener):
             DeviceEvent.CC: self.inform,
         }
         self.device_q = Queue()
-        self.input.command(Device.add_listener, self.device_q)
-        self.output.command(Device.add_listener, self.device_q)
+        self.input.add_listener(self.device_q)
+        self.output.add_listener(self.device_q)
 
         self.observers = []
 
@@ -293,7 +295,7 @@ class Interface(Listener):
         """
         for ID in self.view.find_IDs_by_target(target):
             if not exclude_IDs or ID not in exclude_IDs:
-                self.input.command(Device.set_control, ID, target.value)
+                self.input.set_control(ID, target.value, just_send=True)
 
 
     def reflect_all(self):
@@ -308,11 +310,11 @@ class Interface(Listener):
                     getattr(target, "value")
                 except AttributeError:
                     continue
-                self.input.command(Device.set_control, ID, target.value)
+                self.input.set_control(ID, target.value)
                 untouched.remove(ID)
 
         for ID in untouched:
-            self.input.command(Device.set_control, ID, 0)
+            self.input.set_control(ID, 0)
             
     def add_view(self, view):
         """
@@ -414,7 +416,8 @@ class Interface(Listener):
                     # Perform the triggerion of the target. This might send a
                     # message to the output device but could also be a meta
                     # command like switching views
-                    target.trigger(value)
+                    target.trigger(value, reflect=False)
+
                     # Multiple input controls might be mapped to this
                     # so let's reflect on the input device but exclude the
                     # ID that issued the value change
@@ -427,6 +430,7 @@ class Interface(Listener):
         """
         Called by a target when it has been triggered
         """
+        return
         IDs_mapped = [ID for ID, targets in self.view.map.items() if target in targets]
         for o in self.observers:
             o.callback_value(IDs_mapped, target)
@@ -464,7 +468,7 @@ class Interface(Listener):
             for m in self.modifiers:
                 m.tick(time_now)
 
-            time.sleep(0)
+            time.sleep(1.0 / 1000)
 
     def __repr__(self):
         return "Interface"
@@ -499,11 +503,12 @@ def test2(i):
     for macro in i.input.macros[0][1:]:
         i.view.map_this(macro.ID, t)
 
-    return
-    from modifiers import LFOSine
-    s = LFOSine(frequency=1)
-    i.add_modifier(s)
-    s.target(t)
+
+    if True:
+        from modifiers import LFOSine
+        s = LFOSine(frequency=1)
+        i.add_modifier(s)
+        s.target(t)
 
     init_view = i.view
     _, second_view = i.quick_view(105)
@@ -518,7 +523,6 @@ def test2(i):
 
     # Command button momentary
     i.quick_parameter(106)
-
 
     i.switch_to_view(second_view)
 
@@ -541,6 +545,7 @@ def test2(i):
 
 
 
+
 def fun(bcr):
     x = 0
     import math
@@ -553,8 +558,8 @@ def fun(bcr):
         x += 0.2
 
 if __name__ == "__main__":
-    bcr = BCR2k()
-    loop = MidiLoop()
+    bcr = BCR2k(auto_start=False)
+    loop = MidiLoop(auto_start=False)
     print("Devices started")
 
     interface = Interface(bcr, loop)

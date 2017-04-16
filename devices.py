@@ -119,7 +119,7 @@ class Device(ControlParent):
             eprint("Control with ID %s not found" % ID)
 
 
-    def set_control(self, ID, value, from_input=False):
+    def set_control(self, ID, value, from_input=False, just_send=False):
         """
         Try to set the value of a control and report its value back to
         the hardware device.
@@ -153,7 +153,7 @@ class Device(ControlParent):
         # If it came from the input device or the value we tried to set is
         # different than what the virutal control assumed, issue the cc
         # to all listeners
-        if from_input or real_value != value:
+        if not just_send and (from_input or real_value != value):
             self.control_changed(ID, real_value)
          
 

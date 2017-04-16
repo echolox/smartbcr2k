@@ -19,3 +19,8 @@ import sys
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
+
+DEBUG_PRINT = True
+def dprint(*args, **kwargs):
+    if DEBUG_PRINT:
+        print(*args, **kwargs)

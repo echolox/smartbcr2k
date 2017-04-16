@@ -15,7 +15,7 @@ class Target(object):
         self.parent = parent
         self.trigger_callback = callback
 
-    def trigger(self, value=None):
+    def trigger(self, value=None, reflect=True):
         """
         Their trigger method is then called
         with the value transmitted by the Control.
@@ -52,7 +52,7 @@ class SwitchView(Target):
         # @TODO: Class member override?
         self.trigger_vals = [127]
 
-    def trigger(self, value=None):
+    def trigger(self, value=None, reflect=False):
         self.parent.switch_to_view(self.view_name)
         super().trigger(value)
 
@@ -124,7 +124,7 @@ class Parameter(ValueTarget):
         s["is_button"] = self.is_button
         return s
 
-    def trigger(self, value=None):
+    def trigger(self, value=None, reflect=True):
         """
         Forwards the value to the configured (output) Device with
         the transmitted value.
@@ -136,7 +136,8 @@ class Parameter(ValueTarget):
                 else:
                     value = 0
             self.value = value
-        self.parent.reflect_value(self)
+        if reflect:
+            self.parent.reflect_value(self)
         super().trigger(self.value)
 
     def from_dict(self, d):

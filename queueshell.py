@@ -12,9 +12,12 @@ to be called periodically, such a method can be provided in the Shell constructo
 from queue import Queue, Empty
 from time import sleep
 from threading import Thread
-from uuid import uuid4
+from util import dprint
 
 yield_thread = lambda: sleep(0)
+
+
+
 
 class ShellResult(Queue):
     pass
@@ -83,6 +86,7 @@ class Shell(object):
                 # Handle incoming calls from the queue
                 while True:
                     call, result, args, kwargs = self._q.get_nowait()
+#                    dprint(self, call)
                     result.put(call(*args, **kwargs))
             except Empty:
                 # until nothing's left on it
@@ -117,6 +121,9 @@ class Shell(object):
         if name in Shell._internals:
             object.__setattr__(self, name, value)
         setattr(self._o, name, value)
+
+    def __eq__(self, other):
+        return self._o == other
 
 if __name__ == "__main__":
     class A(object):

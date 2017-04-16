@@ -7,140 +7,12 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
+from controls import *
 from util import FULL, clip
 
 DEFAULT_IN_PORT = 3
 DEFAULT_OUT_PORT = 4
 
-
-### HARDWARE CONTROL SIMULATIONS
-
-class Control(object):
-
-    configurable = []
-
-    def __init__(self, ID, parent=None, minval=0, maxval=127):
-        self.ID = ID
-        self.parent = parent
-        self.minval = minval
-        self.maxval = maxval
-        self._value = 0
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        self.reflect(value)
-        self.parent.broadcast(self.ID, self._value)
-        return self._value
-
-    def reflect(self, value):
-        self._value = clip(self.minval, self.maxval, value)
-        self.parent.send(self.ID, self._value)
-
-    def configure(self, conf):
-        assert(list(conf.keys()) == self.configurable)
-        for k, v in conf.items():
-            setattr(self, k, v)
-
-    def __repr__(self):
-        return "(%i) %i" % (self.ID, self.value)
-
-    def __str__(self):
-        return self.__repr__()
-
-
-class Button(Control):
-
-    configurable = ["toggle"]
-    
-    def __init__(self, ID, parent=None, toggle=True, **kwargs):
-        super().__init__(ID, parent, **kwargs)
-        self.toggle = toggle
-        self.state = False
-        self.ignore = 0
-
-        self.callbacks = []
-
-    def on(self):
-        self._value = self.maxval
-        self.state = True
-        self.ignore = 1
-        self.parent.send(self.ID, self._value)
-        self.parent.broadcast(self.ID, self.state)
-
-    def off(self):
-        self._value = self.minval
-        self.state = False
-        self.ignore = 0
-        self.parent.send(self.ID, self._value)
-        self.parent.broadcast(self.ID, self.state)
-
-    def toggle(self):
-        if self.toggle:
-            if self.state:
-                self.off()
-            else:
-                self.on()
-
-    @Control.value.setter
-    def value(self, value):
-        """
-        React to value changes on the hardware. If the button configured
-        to toggle, we need to reflect that on the hardware where every
-        button is actually momentary.
-        """
-        # When in a toggle cycle, we need to ignore certain presses:
-        # 1: Turn on
-        # 0: Ignore
-        # 1: Ignore
-        # 0: Turn off
-        if self.ignore > 0:
-            self.ignore -= 1
-            self.parent.send(self.ID, self._value)
-            return
-
-
-        if self.toggle:
-            if value == self.maxval and not self.state:
-                self._value = self.maxval
-                self.state = True
-                self.ignore = 2
-            elif value == self.minval and self.state:
-                self._value = self.minval
-                self.state = False
-
-            self.reflect(self._value)
-#            self.parent.send(self.ID, self._value)
-            self.parent.broadcast(self.ID, self.state)
-            return self._value
-        else:
-            self.reflect(value)
-            self.parent.broadcast(self.ID, self.state)
-            return value
-    
-    def reflect(self, value):
-        """
-        Reflects the value (True, False, 0-127) back to the hardware
-        """
-        if type(value) == bool:
-            self.state  = value
-            self._value = FULL if value else 0
-        else:
-            self._value = clip(self.minval, self.maxval, value)
-            self.state  = self._value == self.maxval
-
-        if self.toggle:
-            if self.state:
-                self.ignore = 1
-            else:
-                self.ignore = 0
-        self.parent.send(self.ID, self._value)
-
-class Dial(Control):
-    pass
 
 
 ### DEVICES
@@ -154,7 +26,7 @@ def select_port(port_type="input"):
     return int(input())
 
 
-class Device(object):
+class Device(ControlParent):
 
     def __init__(self, name="unnamed", channel=7, interactive=False, auto_start=True):
         self.name = name
@@ -185,7 +57,7 @@ class Device(object):
         message, deltatime = event
         print("[%s] %r" % (self.name, message))
 
-    def send(self, cc, value):
+    def send_to_device(self, cc, value):
         channel_byte = CONTROL_CHANGE | (self.channel - 1)
         self.output.send_message([channel_byte, cc, value])
 
@@ -285,10 +157,9 @@ class BCR2k(Device):
     def input_callback(self, event):
         message, deltatime = event
         _, ID, value = message
-        print(message)
         self.set_control(ID, value)
 
-    def broadcast(self, ID, value):
+    def control_changed(self, ID, value):
         for listener in self.listeners:
             listener.inform(self, ID, value)
 

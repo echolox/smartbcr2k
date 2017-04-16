@@ -22,10 +22,9 @@ class ShellResult(Queue):
 
 class ShellCall(object):
     """
-    Wraps a bound method that doesn't expect a return value.
-    When the wrapped method is called, the bound method and
-    args and kwargs are placed on the queue to be consumed
-    inside the shell's main_loop.
+    Wraps a bound method.  When the wrapped method is called,
+    the bound method and args and kwargs are placed on the queue
+    to be consumed inside the shell's main_loop.
     """
     def __init__(self, method, queue):
         self._m = method
@@ -39,10 +38,10 @@ class ShellCall(object):
 
 class Shell(object):
     """
-    Wraps an object for thread safe communication via a queue on the object.
+    Wraps an object for thread safe method calls via a Queue In The Shell (tm)
     """
 
-    _internals = ["_internals", "_o", "_q", "_u", "_running", "_thread"]
+    _internals = ["_internals", "_o", "_q", "_u", "_running", "_thread", "_start", "_main_loop", "_stop"]
 
     def __init__(self, o, o_update=lambda: None, auto_start=True):
         # The object to be wrapped
@@ -59,19 +58,22 @@ class Shell(object):
 
         # All method calls on the wrapped object will happen in this thread
         # along with the provided update_method
-        self._thread = Thread(target=self.main_loop, daemon=True)
+        self._thread = Thread(target=self._main_loop, daemon=True)
 
         if auto_start:
-            self.start()
+            self._start()
 
-    def start(self):
+    def _start(self):
         """
         Starts the main_loop in the Shell's thread.
         """
         self._running = True
         self._thread.start()
 
-    def main_loop(self):
+    def _stop(self):
+        self._running = False
+
+    def _main_loop(self):
         """
         Handle method calls from the queue und call the provided
         update method.
@@ -155,8 +157,18 @@ if __name__ == "__main__":
     print(s.full(11, b="Arin").get())
     print()
 
+    print("> Entering infinite loop. Ctrl+C to exit")
     try:
         while True:
             pass
     except KeyboardInterrupt:
-        pass
+        print("STOPPING THE SHELL")
+        s._stop()
+
+    import time
+    import sys
+    print("KILLED", end="")
+    for _ in range(3):
+        sys.stdout.flush()
+        time.sleep(0.5)
+        print(".", end="")

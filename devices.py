@@ -1,6 +1,6 @@
 import time
 import rtmidi
-from queue import Queue
+from queue import Queue, Empty
 from threading import Thread
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
@@ -44,18 +44,22 @@ class Device(ControlParent):
         self.last_blink = time.time()
 
         self.thread = Thread(target=self.main_loop, daemon=True)
+
+        self.commands = Queue()
+
+        self.setup_controls()
+
         if auto_start:
             if not (self.input and self.output):
                 print("Could not start the Device thread without any input or output configured")
             else:
                 self.start()
 
-    def input_callback(self, event):
+    def setup_controls(self):
         """
-        Override this to respond to midi events
+        Override to create and initialize controls on this Device
         """
-        message, deltatime = event
-        print("[%s] %r" % (self.name, message))
+        pass
 
     def send_to_device(self, cc, value):
         channel_byte = CONTROL_CHANGE | (self.channel - 1)
@@ -76,6 +80,13 @@ class Device(ControlParent):
             if event:
                 self.input_callback(event)
 
+            # Handle incoming commands
+            try:
+                method, args, kwargs = self.commands.get_nowait()
+                method(self, *args, **kwargs)
+            except Empty:
+                pass
+
             # Blinking routine
             if (t - self.last_blink) > 0.5:
                 self.blink_state = 1 if self.blink_state==0 else 0 
@@ -86,6 +97,41 @@ class Device(ControlParent):
                 self.last_blink = t
 
             time.sleep(0)  # YIELD THREAD
+
+    def set_control(self, ID, value, from_input=True):
+        """
+        Try to set the value of a control and report its value back to
+        the hardware device.
+        """
+        try:
+            # The Control might implement some further logic,
+            # which can result in a different value being set
+            # than what we are trying to set here (think min/max-
+            # values or ignoring button presses).
+            real_value = self.controls[ID].value(value)
+            # Therefore we get the real_value reported back from
+            # the control which we can then reflect on the input device
+            # If None was returned, the control wants us to ignore it
+            if real_value is not None:
+                if not from_input or real_value != value:
+                    self.send_to_device(ID, real_value)
+        except KeyError:
+            print("Control with ID %s not found" % ID)
+
+    def input_callback(self, event):
+        """
+        Handles a Midi event from the input device
+        """
+        message, deltatime = event
+        _, ID, value = message
+        self.set_control(ID, value, from_input=True)
+
+    def command(self, method, *args, **kwargs):
+        """
+        Schedule a method call on this object to be executed in the
+        Devices own thread. Cannot return a result this way.
+        """
+        self.commands.put((method, args, kwargs))
 
     def control_changed(self, ID, value):
         """
@@ -111,10 +157,12 @@ class MidiLoop(Device):
 class BCR2k(Device):
        
     def __init__(self, *args, **kwargs):
+        # @Temp: Figure out the ports differently
         self.output, self.outname = open_midioutput(DEFAULT_OUT_PORT)
         self.input,  self.inname  = open_midiinput (DEFAULT_IN_PORT)
         super().__init__("BCR2k", 7, *args, **kwargs)
 
+    def setup_controls(self):
         self.macros = [[], [], [], []]
         for i in range(1, 32 + 1):
             self.controls[i] = Dial(i, self)
@@ -144,34 +192,6 @@ class BCR2k(Device):
         for i in range(105, 108 + 1):
             self.controls[i] = Button(i, self, toggle=False)
             self.command_buttons.append(self.controls[i])
-
-    def set_control(self, ID, value, from_input=True):
-        """
-        Try to set the value of a control and report its value back to
-        the hardware device.
-        """
-        try:
-            # The Control might implement some further logic,
-            # which can result in a different value being set
-            # than what we are trying to set here (think min/max-
-            # values or ignoring button presses).
-            real_value = self.controls[ID].value(value)
-            # Therefore we get the real_value reported back from
-            # the control which we can then reflect on the input device
-            # If None was returned, the control wants us to ignore it
-            if real_value is not None:
-                if not from_input or real_value != value:
-                    self.send_to_device(ID, real_value)
-        except KeyError:
-            print("Control with ID %s not found" % ID)
-
-    def input_callback(self, event):
-        """
-        Handles a Midi event from the input device
-        """
-        message, deltatime = event
-        _, ID, value = message
-        self.set_control(ID, value, from_input=True)
 
 
 class Listener(object):

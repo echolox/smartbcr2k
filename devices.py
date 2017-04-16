@@ -1,6 +1,6 @@
 import time
 import rtmidi
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 from threading import Thread
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
@@ -25,6 +25,8 @@ def select_port(port_type="input"):
     print("Select Port by number: ", end="")
     return int(input())
 
+class DeviceEvent(Enum):
+    CC = 1
 
 class Device(ControlParent):
 
@@ -37,8 +39,6 @@ class Device(ControlParent):
 
         self.controls = {} 
 
-        self.listeners = []
-
         self.blinken = []
         self.blink_state = 0
         self.last_blink = time.time()
@@ -46,6 +46,7 @@ class Device(ControlParent):
         self.thread = Thread(target=self.main_loop, daemon=True)
 
         self.commands = Queue()
+        self.listener_qs = []
 
         self.setup_controls()
 
@@ -98,7 +99,7 @@ class Device(ControlParent):
 
             time.sleep(0)  # YIELD THREAD
 
-    def set_control(self, ID, value, from_input=True):
+    def set_control(self, ID, value, from_input=False):
         """
         Try to set the value of a control and report its value back to
         the hardware device.
@@ -109,12 +110,28 @@ class Device(ControlParent):
             # than what we are trying to set here (think min/max-
             # values or ignoring button presses).
             real_value = self.controls[ID].value(value)
+
             # Therefore we get the real_value reported back from
             # the control which we can then reflect on the input device
             # If None was returned, the control wants us to ignore it
-            if real_value is not None:
-                if not from_input or real_value != value:
-                    self.send_to_device(ID, real_value)
+            if real_value is None:
+                return
+
+            # Otherwise, depending on where the control change came from
+            # inform the hardware devices or possible listeners
+
+            # If the cc didn't come from the hardware, or if it did but the
+            # real_value is different that what we tried to set the virtual
+            # control to, send that cc to the input
+            if not from_input or real_value != value:
+                self.send_to_device(ID, real_value)
+
+            # If it came from the input device or the value we tried to set is
+            # different than what the virutal control assumed, issue the cc
+            # to all listeners
+            if from_input or real_value != value:
+                self.control_changed(ID, real_value)
+             
         except KeyError:
             print("Control with ID %s not found" % ID)
 
@@ -138,8 +155,11 @@ class Device(ControlParent):
         Overrides from ControlParent. Gets called by controls when their
         value has changed.
         """
-        for listener in self.listeners:
-            listener.inform(self, ID, value)
+        for listener in self.listener_qs:
+            try:
+                listener.put_nowait((DeviceEvent.CC, self, ID, value))
+            except Full:
+                print(listener, "is full")
 
     def __repr__(self):
         return self.name
@@ -213,8 +233,19 @@ if __name__ == "__main__":
 #    list_output_ports()
     bcr = BCR2k(auto_start=True)
 
+    q = Queue()
+    bcr.listener_qs.append(q)
+
+    bcr.command(Device.set_control, 90, 127)
+
     while True:
         try:
-            pass
+
+            try:
+                event, *data = q.get_nowait()
+                print(event.name, data)
+            except Empty:
+                pass
+
         except KeyboardInterrupt:
             break

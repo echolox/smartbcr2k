@@ -62,6 +62,23 @@ class Device(ControlParent):
         """
         pass
 
+    def add_listener(self, q):
+        """
+        Add a listener queue to be informed of DeviceEvents
+        """
+        if q not in self.listener_qs:
+            self.listener_qs.append(q)
+
+    def remove_listener(self, q):
+        """
+        Removes a queue from the listener qs
+        """
+        try:
+            self.listener_qs.remove(q)
+        except ValueError:
+            print("(Exception): Tried to remove Queue that wasn't registered:", q)
+            pass
+
     def send_to_device(self, cc, value):
         channel_byte = CONTROL_CHANGE | (self.channel - 1)
         self.output.send_message([channel_byte, cc, value])
@@ -234,7 +251,7 @@ if __name__ == "__main__":
     bcr = BCR2k(auto_start=True)
 
     q = Queue()
-    bcr.listener_qs.append(q)
+    bcr.command(Device.add_listener, q)
 
     bcr.command(Device.set_control, 90, 127)
 
@@ -249,3 +266,5 @@ if __name__ == "__main__":
 
         except KeyboardInterrupt:
             break
+
+    bcr.command(Device.remove_listener, q)

@@ -1,5 +1,7 @@
 import time
 import rtmidi
+from queue import Queue
+from threading import Thread
 from enum import Enum
 from rtmidi.midiconstants import CONTROL_CHANGE
 
@@ -7,8 +9,9 @@ from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_port
 
 from util import FULL, clip
 
-DEFAULT_IN_PORT = 7
-DEFAULT_OUT_PORT = 8
+DEFAULT_IN_PORT = 3
+DEFAULT_OUT_PORT = 4
+
 
 
 def select_port(port_type="input"):
@@ -21,16 +24,13 @@ def select_port(port_type="input"):
 
 
 class Device(object):
-    def __init__(self, name="unnamed", channel=7, interactive=False):
+
+    def __init__(self, name="unnamed", channel=7, interactive=False, auto_start=True):
         self.name = name
         self.channel = channel 
         if interactive:
             self.output, self.outname = open_midioutput(select_port("output"))
             self.input,  self.inname  = open_midiinput (select_port("input"))
-            self.init_callback()
-        else:
-            self.output = self.input = None
-            self.outname = self.inname = "Uninitialized"
 
         self.controls = {} 
 
@@ -40,10 +40,17 @@ class Device(object):
         self.blink_state = 0
         self.last_blink = time.time()
 
-    def init_callback(self):
-        self.input.set_callback(self.input_callback) 
+        self.thread = Thread(target=self.main_loop, daemon=True)
+        if auto_start:
+            if not (self.input and self.output):
+                print("Could not start the Device thread without any input or output configured")
+            else:
+                self.start()
 
-    def input_callback(self, event, date=None):
+    def input_callback(self, event):
+        """
+        Override this to respond to midi events
+        """
         message, deltatime = event
         print("[%s] %r" % (self.name, message))
 
@@ -51,15 +58,31 @@ class Device(object):
         channel_byte = CONTROL_CHANGE | (self.channel - 1)
         self.output.send_message([channel_byte, cc, value])
 
-    def update(self, time):
-        # Blinking routine
-        if (time - self.last_blink) > 0.5:
-            self.blink_state = 1 if self.blink_state==0 else 0 
-            for blink in self.blinken:
-                # @Feature: Instead of hardcoded FULL, use known value
-                #           to make this compatible with encoders
-                self.send(blink, self.blink_state * self.controls[blink].maxval)
-            self.last_blink = time
+    def start(self):
+        """
+        Start the main_loop of this device
+        """
+        self.thread.start()
+
+    def main_loop(self):
+        while True:
+            t = time.time()
+
+            # Handle midi events
+            event = self.input.get_message()
+            if event:
+                self.input_callback(event)
+
+            # Blinking routine
+            if (t - self.last_blink) > 0.5:
+                self.blink_state = 1 if self.blink_state==0 else 0 
+                for blink in self.blinken:
+                    # @Feature: Instead of hardcoded FULL, use known value
+                    #           to make this compatible with encoders
+                    self.send(blink, self.blink_state * self.controls[blink].maxval)
+                self.last_blink = t
+
+            time.sleep(0)  # YIELD THREAD
 
     def __repr__(self):
         return self.name
@@ -69,11 +92,10 @@ class Device(object):
 
 class MidiLoop(Device):
 
-    def __init__(self):
-        super().__init__("MidiLoop", 1)
+    def __init__(self, *args, **kwargs):
+        super().__init__("MidiLoop", 1, *args, **kwargs)
         self.input,  self.inname  = open_midiinput (0)
         self.output, self.outname = open_midioutput(1)
-        self.init_callback()
 
 class Control(object):
 
@@ -204,11 +226,10 @@ class Dial(Control):
 
 class BCR2k(Device):
        
-    def __init__(self):
-        super().__init__("BCR2k", 7)
+    def __init__(self, *args, **kwargs):
         self.output, self.outname = open_midioutput(DEFAULT_OUT_PORT)
         self.input,  self.inname  = open_midiinput (DEFAULT_IN_PORT)
-        self.init_callback()
+        super().__init__("BCR2k", 7, *args, **kwargs)
 
         self.macros = [[], [], [], []]
         for i in range(1, 32 + 1):
@@ -257,9 +278,10 @@ class BCR2k(Device):
         except KeyError:
             print("Control with ID %s not found" % ID)
 
-    def input_callback(self, event, date=None):
+    def input_callback(self, event):
         message, deltatime = event
         _, ID, value = message
+        print(message)
         self.set_control(ID, value)
 
     def broadcast(self, ID, value):
@@ -281,3 +303,13 @@ class Listener(object):
         print("(%s) %s says %i is now %i" % (self, sender, ID, value))
 
 
+if __name__ == "__main__":
+    list_input_ports()
+    list_output_ports()
+    bcr = BCR2k(auto_start=True)
+
+    while True:
+        try:
+            pass
+        except KeyboardInterrupt:
+            break

@@ -10,6 +10,8 @@ from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_port
 from controls import *
 from util import FULL, clip
 
+from queueshell import Shell
+
 DEFAULT_IN_PORT = 3
 DEFAULT_OUT_PORT = 4
 
@@ -45,7 +47,6 @@ class Device(ControlParent):
 
         self.thread = Thread(target=self.main_loop, daemon=True)
 
-        self.commands = Queue()
         self.listener_qs = []
 
         self.setup_controls()
@@ -91,30 +92,26 @@ class Device(ControlParent):
 
     def main_loop(self):
         while True:
-            t = time.time()
-
-            # Handle midi events
-            event = self.input.get_message()
-            if event:
-                self.input_callback(event)
-
-            # Handle incoming commands
-            try:
-                method, args, kwargs = self.commands.get_nowait()
-                method(self, *args, **kwargs)
-            except Empty:
-                pass
-
-            # Blinking routine
-            if (t - self.last_blink) > 0.5:
-                self.blink_state = 1 if self.blink_state==0 else 0 
-                for blink in self.blinken:
-                    # @Feature: Instead of hardcoded FULL, use known value
-                    #           to make this compatible with encoders
-                    self.send(blink, self.blink_state * self.controls[blink].maxval)
-                self.last_blink = t
-
+            self.update()
             time.sleep(0)  # YIELD THREAD
+
+    def update(self):
+        t = time.time()
+
+        # Handle midi events
+        event = self.input.get_message()
+        if event:
+            self.input_callback(event)
+
+        # Blinking routine
+        if (t - self.last_blink) > 0.5:
+            self.blink_state = 1 if self.blink_state==0 else 0 
+            for blink in self.blinken:
+                # @Feature: Instead of hardcoded FULL, use known value
+                #           to make this compatible with encoders
+                self.send(blink, self.blink_state * self.controls[blink].maxval)
+            self.last_blink = t
+
 
     def set_control(self, ID, value, from_input=False):
         """
@@ -159,13 +156,6 @@ class Device(ControlParent):
         message, deltatime = event
         _, ID, value = message
         self.set_control(ID, value, from_input=True)
-
-    def command(self, method, *args, **kwargs):
-        """
-        Schedule a method call on this object to be executed in the
-        Devices own thread. Cannot return a result this way.
-        """
-        self.commands.put((method, args, kwargs))
 
     def control_changed(self, ID, value):
         """
@@ -248,12 +238,12 @@ class Listener(object):
 if __name__ == "__main__":
 #    list_input_ports()
 #    list_output_ports()
-    bcr = BCR2k(auto_start=True)
+    bcr = BCR2k(auto_start=False)
+    sbcr = Shell(bcr, bcr.update)
 
     q = Queue()
-    bcr.command(Device.add_listener, q)
-
-    bcr.command(Device.set_control, 90, 127)
+    sbcr.add_listener(q)
+    sbcr.set_control(90, 127)
 
     try:
         while True:
@@ -265,4 +255,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
 
-    bcr.command(Device.remove_listener, q)
+    bcr.remove_listener(q)

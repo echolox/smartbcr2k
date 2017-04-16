@@ -40,6 +40,7 @@ class WrappedCall(object):
         else:
             # This method call isn't expected to return a
             # value so we can won't block
+            self._q.put_nowait((self._m, self._rq, args, kwargs))
             pass
 
 
@@ -61,7 +62,7 @@ class Shell(object):
 
         # We need a main_loop to constantly check the queue. This is the
         # flag that keeps the loop alive
-        self._running = True
+        self._running = False
 
         # All method calls on the wrapped object will happen in this thread
         # along with the provided update_method

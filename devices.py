@@ -13,89 +13,7 @@ DEFAULT_IN_PORT = 3
 DEFAULT_OUT_PORT = 4
 
 
-
-def select_port(port_type="input"):
-    if port_type=="input":
-        list_input_ports()
-    elif port_type=="output":
-        list_output_ports()
-    print("Select Port by number: ", end="")
-    return int(input())
-
-
-class Device(object):
-
-    def __init__(self, name="unnamed", channel=7, interactive=False, auto_start=True):
-        self.name = name
-        self.channel = channel 
-        if interactive:
-            self.output, self.outname = open_midioutput(select_port("output"))
-            self.input,  self.inname  = open_midiinput (select_port("input"))
-
-        self.controls = {} 
-
-        self.listeners = []
-
-        self.blinken = []
-        self.blink_state = 0
-        self.last_blink = time.time()
-
-        self.thread = Thread(target=self.main_loop, daemon=True)
-        if auto_start:
-            if not (self.input and self.output):
-                print("Could not start the Device thread without any input or output configured")
-            else:
-                self.start()
-
-    def input_callback(self, event):
-        """
-        Override this to respond to midi events
-        """
-        message, deltatime = event
-        print("[%s] %r" % (self.name, message))
-
-    def send(self, cc, value):
-        channel_byte = CONTROL_CHANGE | (self.channel - 1)
-        self.output.send_message([channel_byte, cc, value])
-
-    def start(self):
-        """
-        Start the main_loop of this device
-        """
-        self.thread.start()
-
-    def main_loop(self):
-        while True:
-            t = time.time()
-
-            # Handle midi events
-            event = self.input.get_message()
-            if event:
-                self.input_callback(event)
-
-            # Blinking routine
-            if (t - self.last_blink) > 0.5:
-                self.blink_state = 1 if self.blink_state==0 else 0 
-                for blink in self.blinken:
-                    # @Feature: Instead of hardcoded FULL, use known value
-                    #           to make this compatible with encoders
-                    self.send(blink, self.blink_state * self.controls[blink].maxval)
-                self.last_blink = t
-
-            time.sleep(0)  # YIELD THREAD
-
-    def __repr__(self):
-        return self.name
-
-    def __str__(self):
-        return self.__repr__()
-
-class MidiLoop(Device):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__("MidiLoop", 1, *args, **kwargs)
-        self.input,  self.inname  = open_midiinput (0)
-        self.output, self.outname = open_midioutput(1)
+### HARDWARE CONTROL SIMULATIONS
 
 class Control(object):
 
@@ -223,6 +141,92 @@ class Button(Control):
 
 class Dial(Control):
     pass
+
+
+### DEVICES
+
+def select_port(port_type="input"):
+    if port_type=="input":
+        list_input_ports()
+    elif port_type=="output":
+        list_output_ports()
+    print("Select Port by number: ", end="")
+    return int(input())
+
+
+class Device(object):
+
+    def __init__(self, name="unnamed", channel=7, interactive=False, auto_start=True):
+        self.name = name
+        self.channel = channel 
+        if interactive:
+            self.output, self.outname = open_midioutput(select_port("output"))
+            self.input,  self.inname  = open_midiinput (select_port("input"))
+
+        self.controls = {} 
+
+        self.listeners = []
+
+        self.blinken = []
+        self.blink_state = 0
+        self.last_blink = time.time()
+
+        self.thread = Thread(target=self.main_loop, daemon=True)
+        if auto_start:
+            if not (self.input and self.output):
+                print("Could not start the Device thread without any input or output configured")
+            else:
+                self.start()
+
+    def input_callback(self, event):
+        """
+        Override this to respond to midi events
+        """
+        message, deltatime = event
+        print("[%s] %r" % (self.name, message))
+
+    def send(self, cc, value):
+        channel_byte = CONTROL_CHANGE | (self.channel - 1)
+        self.output.send_message([channel_byte, cc, value])
+
+    def start(self):
+        """
+        Start the main_loop of this device
+        """
+        self.thread.start()
+
+    def main_loop(self):
+        while True:
+            t = time.time()
+
+            # Handle midi events
+            event = self.input.get_message()
+            if event:
+                self.input_callback(event)
+
+            # Blinking routine
+            if (t - self.last_blink) > 0.5:
+                self.blink_state = 1 if self.blink_state==0 else 0 
+                for blink in self.blinken:
+                    # @Feature: Instead of hardcoded FULL, use known value
+                    #           to make this compatible with encoders
+                    self.send(blink, self.blink_state * self.controls[blink].maxval)
+                self.last_blink = t
+
+            time.sleep(0)  # YIELD THREAD
+
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.__repr__()
+
+class MidiLoop(Device):
+
+    def __init__(self, *args, **kwargs):
+        self.input,  self.inname  = open_midiinput (0)
+        self.output, self.outname = open_midioutput(1)
+        super().__init__("MidiLoop", 1, *args, **kwargs)
 
 class BCR2k(Device):
        

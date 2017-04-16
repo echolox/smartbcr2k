@@ -145,27 +145,33 @@ class BCR2k(Device):
             self.controls[i] = Button(i, self, toggle=False)
             self.command_buttons.append(self.controls[i])
 
-
-    def set_control(self, ID, value):
-        try:
-            self.controls[ID].value = value
-        except KeyError:
-            print("Control with ID %s not found" % ID)
-
-    def reflect(self, ID, value):
+    def set_control(self, ID, value, from_input=True):
         """
-        Sets the value of a control without issuing the value back
-        as a broadcast from the device.
+        Try to set the value of a control and report its value back to
+        the hardware device.
         """
         try:
-            self.controls[ID].reflect(value)
+            # The Control might implement some further logic,
+            # which can result in a different value being set
+            # than what we are trying to set here (think min/max-
+            # values or ignoring button presses).
+            real_value = self.controls[ID].value(value)
+            # Therefore we get the real_value reported back from
+            # the control which we can then reflect on the input device
+            # If None was returned, the control wants us to ignore it
+            if real_value is not None:
+                if not from_input or real_value != value:
+                    self.send_to_device(ID, real_value)
         except KeyError:
             print("Control with ID %s not found" % ID)
 
     def input_callback(self, event):
+        """
+        Handles a Midi event from the input device
+        """
         message, deltatime = event
         _, ID, value = message
-        self.set_control(ID, value)
+        self.set_control(ID, value, from_input=True)
 
 
 class Listener(object):
@@ -183,8 +189,8 @@ class Listener(object):
 
 
 if __name__ == "__main__":
-    list_input_ports()
-    list_output_ports()
+#    list_input_ports()
+#    list_output_ports()
     bcr = BCR2k(auto_start=True)
 
     while True:

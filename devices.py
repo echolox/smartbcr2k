@@ -87,6 +87,14 @@ class Device(ControlParent):
 
             time.sleep(0)  # YIELD THREAD
 
+    def control_changed(self, ID, value):
+        """
+        Overrides from ControlParent. Gets called by controls when their
+        value has changed.
+        """
+        for listener in self.listeners:
+            listener.inform(self, ID, value)
+
     def __repr__(self):
         return self.name
 
@@ -158,10 +166,6 @@ class BCR2k(Device):
         message, deltatime = event
         _, ID, value = message
         self.set_control(ID, value)
-
-    def control_changed(self, ID, value):
-        for listener in self.listeners:
-            listener.inform(self, ID, value)
 
 
 class Listener(object):

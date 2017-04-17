@@ -180,7 +180,6 @@ class Interface(Listener):
 
         self.update_thread = Thread(target=self.main_loop, daemon=True)
 
-
         if auto_start:
             self.start()
 
@@ -303,7 +302,7 @@ class Interface(Listener):
         print("[%s] Switched to %s" % (self, view))
         new_view = self.add_view(view)
 
-        self.reflect_all()
+        self.reflect_all_on_input()
 
         for o in self.observers:
             o.callback_view(self.view, new_view)
@@ -434,7 +433,7 @@ class Interface(Listener):
             if not exclude_IDs or ID not in exclude_IDs:
                 self.input.set_control(ID, target.value)
 
-    def reflect_all(self):
+    def reflect_all_on_input(self):
         """
         Based on the current view, reflect all values to the input device
         """
@@ -588,7 +587,7 @@ if __name__ == "__main__":
     print("Interface started")
 
 #    fun(bcr)
-#    test2(interface)
+    test2(interface)
 
     try:
         while True:

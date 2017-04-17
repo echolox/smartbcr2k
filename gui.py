@@ -4,7 +4,7 @@ from collections import namedtuple
 
 from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget, QLineEdit, QAction, QMenuBar, QMainWindow, QSlider
 from PyQt5.QtGui import QImage, QPixmap, QFont, QPalette, QBrush, QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 
 from ctrl import Interface, View, load_profile, save_profile
 from devices import BCR2k, MidiLoop
@@ -72,7 +72,7 @@ class Editor(QMainWindow):
         if self.interface and self.controller:
             self.initialize(self.interface, self.controller)
 
-    def init_UI(self):
+    def init_window(self):
         """
         Initialize input device agnostic UI elements
         """
@@ -87,16 +87,17 @@ class Editor(QMainWindow):
         self.show()
         self.UI_initialized = True
 
+
     def initialize(self, interface, controller):
         """
         Initialize UI elements dependent on the interface and input device
         """
-        self.init_UI()
+        self.init_window()
 
         self.controller = controller
 
         self.interface = interface
-        self.interface.observers.append(self)
+#        self.interface.observers.append(self)
 
         ### Menu Bar
         def create_action(label, shortcut, tip, callback):
@@ -175,7 +176,6 @@ class Editor(QMainWindow):
         rowlen = 8
 
 
-
         def create_dial(control):
             ID = control.ID
             sld = QSlider(Qt.Horizontal, self)
@@ -231,7 +231,16 @@ class Editor(QMainWindow):
 
         #self.setLayout(self.layout)
 
-        pass
+        self.update_editor()
+
+
+    def update_editor(self):
+        try:
+            self.reflect_all(self.interface.view)
+#            for ID, control in self.interface.input.controls.items():
+#                self.reflect(ID, control.get_value())
+        finally:
+            QTimer.singleShot(1000 / 30, self.update_editor)
 
     def value_changed(self, ID, value):
         self.controller.value_changed(ID, value)
@@ -245,11 +254,9 @@ class Editor(QMainWindow):
 
         setters[type(widget)](widget, value)
 
-       # widget.setText(str(value))
-        
     def reflect_all(self, view):
         for ID in self.control_widgets:
-            value = self.interface.input.controls[ID].value
+            value = self.interface.input.controls[ID].get_value()
             self.reflect(ID, value)
         
 
@@ -288,19 +295,21 @@ if __name__ == '__main__':
     # Setup Devices and Interface
     bcr = BCR2k(auto_start=False)
     loop = MidiLoop(auto_start=False)
-    print("Devices started")
+    print(">> Devices started")
 
-    interface = Interface(bcr, loop)
-    print("Interface started")
+    interface = Interface(bcr, loop, auto_start=False)
+    print(">> Interface started")
     load_profile(interface, "default.bcr")
 
     # Create GUI
     editor = Editor()
+    print(">> Editor started")
 
     sinterface = Shell(interface, interface.update)
 
     # Create Controller
     controller = Controller(sinterface, editor)
+    print(">> Controller created")
 
     # Initialize GUI
     editor.initialize(sinterface, controller)

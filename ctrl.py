@@ -18,7 +18,7 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 from targets import get_target, Parameter, SwitchView
 from devices import Device, BCR2k, MidiLoop, Listener, DeviceEvent
 from modifiers import get_modifier
-from threadshell import Shell
+from threadshell import Shell, yield_thread 
 
 from util import keys_to_ints, unify, eprint, dprint
 
@@ -259,53 +259,8 @@ class Interface(Listener):
         for o in self.observers:
             o.callback_load_profile()
 
-
-    def set_value(self, target, value, input_only=False, exclude_IDs=None):
-        """
-        Sets the value of a Target. The value is typically communicated
-        to both input and output device. This makes it possible to automate
-        values from within the interface and having that reflect on both
-        the input device (hardware) and the output device (DAW).
-
-        We a value change was communicated from the output device (e.g.
-        DAW automation) we only want to inform the input device about the
-        new value. In that case, use the input_only flag. If you don't, a
-        feedback loop might occur.
-
-        Should not be called because a value directly on the input changed.
-        That's what target.trigger() is for.
-        """
-        # Inform input controls mapped to this target about the change
-        self.reflect_value(target)
-
-        # Prevent feedback loop, for example if the source of the
-        # new value was the output device itself
-        if input_only:
-            # We still need to reflect the value change in the target
-            # but without performing the associated triggerion
-            target.value = value
-        else:
-            target.trigger(value) 
-
-
-    def reflect_all(self):
-        """
-        Based on the current view, reflect all values to the input device
-        """
-        untouched = set(self.input.controls.keys())
-        for ID, targets in self.view.map.items():
-            for target in targets:
-                try:
-                    # Does the target have a value type?
-                    getattr(target, "value")
-                except AttributeError:
-                    continue
-                self.input.set_control(ID, target.value)
-                untouched.remove(ID)
-
-        for ID in untouched:
-            self.input.set_control(ID, 0)
-            
+    ########### VIEWS ###############
+           
     def add_view(self, view):
         """
         Adds the view to the view list if it isn't already in there.
@@ -353,6 +308,8 @@ class Interface(Listener):
         for o in self.observers:
             o.callback_view(self.view, new_view)
 
+    ############## TARGETS ################
+
     def add_target(self, target):
         """
         Add a configured target. This method checks for duplicates and
@@ -386,6 +343,9 @@ class Interface(Listener):
             self.view.map_this(ID, t)
         return t, view
 
+
+    ############## CALLBACKS / EVENT / INPUT HANDLING ################
+
     def from_input(self, sender, ID, value):
         """
         Callback method whenever the input (or output devices) produces
@@ -406,16 +366,6 @@ class Interface(Listener):
                 if value != real_value:
                     self.input.set_control(ID, value)
                 self.reflect_target_on_input(target, exclude_IDs=[ID])
-
-    def reflect_target_on_input(self, target, exclude_IDs=None):
-        """
-        Inform the input device of a value change, possibly excluding
-        certain IDs. Only controls mapped to the given target will
-        be updated.
-        """
-        for ID in self.view.find_IDs_by_target(target):
-            if not exclude_IDs or ID not in exclude_IDs:
-                self.input.set_control(ID, target.value)
 
 
     def from_output(self, sender, ID, value):
@@ -474,6 +424,38 @@ class Interface(Listener):
         """
         self.output.set_control(cc, value)
 
+    def reflect_target_on_input(self, target, exclude_IDs=None):
+        """
+        Inform the input device of a value change, possibly excluding
+        certain IDs. Only controls mapped to the given target will
+        be updated.
+        """
+        for ID in self.view.find_IDs_by_target(target):
+            if not exclude_IDs or ID not in exclude_IDs:
+                self.input.set_control(ID, target.value)
+
+    def reflect_all(self):
+        """
+        Based on the current view, reflect all values to the input device
+        """
+        untouched = set(self.input.controls.keys())
+        for ID, targets in self.view.map.items():
+            for target in targets:
+                try:
+                    # Does the target have a value type?
+                    getattr(target, "value")
+                except AttributeError:
+                    continue
+                self.input.set_control(ID, target.value)
+                untouched.remove(ID)
+
+        for ID in untouched:
+            self.input.set_control(ID, 0)
+ 
+
+    ############## MODIFIERS ####################
+
+
     def add_modifier(self, modifier):
         self.modifiers.add(modifier)
 
@@ -487,27 +469,27 @@ class Interface(Listener):
         self.update_thread.start()
 
     def main_loop(self):
-        time_now = 0
         while True:
-            time_now = time.time()
+            self.update()
+            yield_thread()
 
-            # Handle DeviceEvent queue
+    def update(self):
+        time_now = time.time()
+
+        # Handle DeviceEvent queue
+        try:
+            event, *data = self.device_q.get_nowait()
             try:
-                event, *data = self.device_q.get_nowait()
-                try:
-                    self.device_event_dispatch[event](*data)
-                except KeyError:
-                    print(self, "Cannot handle event of type", event.name, file=sys.stderr)
-            except Empty:
-                pass
-
-            # Handle Other Event Queue
+                self.device_event_dispatch[event](*data)
+            except KeyError:
+                print(self, "Cannot handle event of type", event.name, file=sys.stderr)
+        except Empty:
+            pass
 
 
-            for m in self.modifiers:
-                m.tick(time_now)
+        for m in self.modifiers:
+            m.tick(time_now)
 
-            time.sleep(1.0 / 1000)
 
     def __repr__(self):
         return "Interface"
@@ -519,7 +501,9 @@ class Interface(Listener):
 
 def load_profile(interface, filename):
     with open(filename, "r") as infile:
+        print("Loading", filename)
         interface.load_profile(json.load(infile))
+        print("Loaded profile", filename)
 
 
 def save_profile(interface, filename):
@@ -604,7 +588,7 @@ if __name__ == "__main__":
     print("Interface started")
 
 #    fun(bcr)
-    test2(interface)
+#    test2(interface)
 
     try:
         while True:

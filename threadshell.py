@@ -14,10 +14,8 @@ from time import sleep
 from threading import Thread
 from util import dprint
 
-yield_thread = lambda: sleep(0)
-
-
-
+TICK_RATE = 5  # in ms
+yield_thread = lambda: sleep(TICK_RATE / 1000.)
 
 class ShellResult(Queue):
     pass

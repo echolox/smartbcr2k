@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt
 
 from ctrl import Interface, View, load_profile, save_profile
 from devices import BCR2k, MidiLoop
+from threadshell import Shell
 import devices
 
 Vector2 = namedtuple("Vector2", ["x", "y"])
@@ -96,8 +97,6 @@ class Editor(QMainWindow):
 
         self.interface = interface
         self.interface.observers.append(self)
-
-
 
         ### Menu Bar
         def create_action(label, shortcut, tip, callback):
@@ -287,21 +286,23 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
 
     # Setup Devices and Interface
-    bcr = BCR2k()
-    loop = MidiLoop()
+    bcr = BCR2k(auto_start=False)
+    loop = MidiLoop(auto_start=False)
+    print("Devices started")
 
     interface = Interface(bcr, loop)
+    print("Interface started")
     load_profile(interface, "default.bcr")
 
     # Create GUI
     editor = Editor()
 
+    sinterface = Shell(interface, interface.update)
+
     # Create Controller
-    controller = Controller(interface, editor)
+    controller = Controller(sinterface, editor)
 
     # Initialize GUI
-    editor.initialize(interface, controller)
-
-    interface.start()
+    editor.initialize(sinterface, controller)
 
     sys.exit(app.exec_())

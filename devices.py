@@ -10,11 +10,13 @@ from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_port
 from controls import *
 from util import FULL, clip, eprint, dprint
 
-from threadshell import Shell
+from threadshell import Shell, yield_thread
 
 DEFAULT_IN_PORT = 3
 DEFAULT_OUT_PORT = 4
 
+DEFAULT_LOOP_IN = 10
+DEFAULT_LOOP_OUT = 11 
 
 
 ### DEVICES
@@ -93,7 +95,7 @@ class Device(ControlParent):
     def main_loop(self):
         while True:
             self.update()
-            time.sleep(0)  # YIELD THREAD
+            yield_thread()
 
     def update(self):
         t = time.time()
@@ -259,8 +261,8 @@ class MidiLoop(Device):
     """
 
     def __init__(self, *args, **kwargs):
-        self.input,  self.inname  = open_midiinput (11)
-        self.output, self.outname = open_midioutput(12)
+        self.input,  self.inname  = open_midiinput (DEFAULT_LOOP_IN)
+        self.output, self.outname = open_midioutput(DEFAULT_LOOP_OUT)
 
         super().__init__("MidiLoop", 1, *args, **kwargs)
         self.last_sent_values = {ID: 0 for ID in range(1, 129)}

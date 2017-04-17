@@ -1,6 +1,6 @@
 from collections import defaultdict as ddict
 
-from util import FULL, clip
+from util import FULL, clip, unify
 
 class Target(object):
     """
@@ -10,18 +10,20 @@ class Target(object):
 
     trigger_vals = list(range(128))
 
-    def __init__(self, name, parent, callback=None):
+    def __init__(self, name, parent):
         self.name = name
         self.parent = parent
-        self.trigger_callback = callback
 
-    def trigger(self, value=None, reflect=True):
+    def trigger(self, sender, value=None):
         """
-        Their trigger method is then called
-        with the value transmitted by the Control.
+        Triggers the targets action with the given value. If the sender
+        is not associated with our parent, we have to inform our parent
+        that our value has changed. Otherwise, since the trigger was
+        called from the parent, we rely on it to do what it needs to do
+        to react to the Target's trigger.
         """
-        if self.trigger_callback:
-            self.trigger_callback(self)
+        if sender not in (self.parent.input, self.parent.output):
+            self.parent.target_triggered(self, value, sender)
 
     def serialize(self, ID):
         return {"name": self.name,
@@ -35,6 +37,9 @@ class Target(object):
     @classmethod
     def blank(self, parent):
         return Target("unnamed", parent)
+
+    def is_connected_to_output(self, ID):
+        return False
 
 
 class SwitchView(Target):
@@ -52,9 +57,9 @@ class SwitchView(Target):
         # @TODO: Class member override?
         self.trigger_vals = [127]
 
-    def trigger(self, value=None, reflect=False):
+    def trigger(self, sender, value=None):
         self.parent.switch_to_view(self.view_name)
-        super().trigger(value)
+        super().trigger(sender, value)
 
     def serialize(self, *args, **kwargs):
         s = super(SwitchView, self).serialize(*args, **kwargs) 
@@ -87,7 +92,7 @@ class ValueTarget(Target):
         """
         """
         self.modifiers[modifier] = value
-        self.trigger()
+        self.trigger(modifier)
 
     def remove_modifier(self, modifier):
         """
@@ -99,7 +104,7 @@ class ValueTarget(Target):
 
     @property
     def value(self):
-        return clip(self.minimum, self.maximum, self._value + sum(self.modifiers.values()))
+        return int(clip(self.minimum, self.maximum, self._value + sum(self.modifiers.values())))
 
     @value.setter
     def value(self, v):
@@ -124,21 +129,26 @@ class Parameter(ValueTarget):
         s["is_button"] = self.is_button
         return s
 
-    def trigger(self, value=None, reflect=True):
+    def trigger(self, sender, value=None):
         """
         Forwards the value to the configured (output) Device with
         the transmitted value.
         """
-        if value:
+        if value is not None:
             if self.is_button:
                 if value:
                     value = 127
                 else:
                     value = 0
             self.value = value
-        if reflect:
-            self.parent.reflect_value(self)
-        super().trigger(self.value)
+        else:
+            # Called without value, use own value
+            pass
+
+        if sender != self.parent.output:
+            self.parent.to_output(self.cc, self.value)
+        super().trigger(sender, self.value)
+        return self.value
 
     def from_dict(self, d):
         super(Parameter, self).from_dict(d)
@@ -149,6 +159,9 @@ class Parameter(ValueTarget):
     @classmethod
     def blank(self, parent):
         return Parameter("unnamed", parent, 0)
+
+    def is_connected_to_output(self, ID):
+        return ID == self.cc
 
 from inspect import isclass
 TARGETS = {C.__name__: C for C in globals().values() if isclass(C) and issubclass(C, Target)}

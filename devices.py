@@ -8,9 +8,9 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
 from controls import *
-from util import FULL, clip
+from util import FULL, clip, eprint, dprint
 
-from queueshell import Shell
+from threadshell import Shell
 
 DEFAULT_IN_PORT = 3
 DEFAULT_OUT_PORT = 4
@@ -119,15 +119,30 @@ class Device(ControlParent):
             eprint("Control with ID %s not found" % ID)
 
 
-    def set_control(self, ID, value, from_input=False, just_send=False):
+    def set_control(self, ID, value, from_input=False, inform_observers=False):
         """
-        Try to set the value of a control and report its value back to
-        the hardware device.
+        Try to set the value of a control. Depending on the flags the value
+        set is reported back to:
+        - the Hardware (self.input port)
+        - to any observer
+
+        from_input: The input came in through the midi port callback
+                    -> If the value set is the one we expect, don't
+                       report back to the input port
+        inform_observers:  Whether to inform observers about the value
+                    @Robustness: Only works with one observer right now
+
+        Default assumption: We call this from the outside, which means we only really
+        want to set the control value on the hardware and not get the set value reported
+        back to use, which might result in an endless loop of messages. Hence the defaults
+        from_input=False, inform_observers=False. Any CC messages from the hardware should
+        come through the input_callback method which automatically sets the correct flags.
         """
         try:
             control = self.controls[ID]
         except KeyError:
             eprint("Control with ID %s not found" % ID)
+            return
 
         # The Control might implement some further logic,
         # which can result in a different value being set
@@ -147,15 +162,16 @@ class Device(ControlParent):
         # If the cc didn't come from the hardware, or if it did but the
         # real_value is different that what we tried to set the virtual
         # control to, send that cc to the input
+#        if not sender == self.input or real_value != value:
         if not from_input or real_value != value:
             self.send_to_device(ID, real_value)
 
         # If it came from the input device or the value we tried to set is
         # different than what the virutal control assumed, issue the cc
         # to all listeners
-        if not just_send and (from_input or real_value != value):
+        if inform_observers and (from_input or real_value != value):
             self.control_changed(ID, real_value)
-         
+
 
     def input_callback(self, event):
         """
@@ -163,12 +179,12 @@ class Device(ControlParent):
         """
         message, deltatime = event
         _, ID, value = message
-        self.set_control(ID, value, from_input=True)
+        self.set_control(ID, value, from_input=True, inform_observers=True)
 
     def control_changed(self, ID, value):
         """
-        Overrides from ControlParent. Gets called by controls when their
-        value has changed.
+        Inform the observers that a control value has changed by issuing
+        a DeviceEvent.CC.
         """
         for listener in self.listener_qs:
             try:
@@ -181,13 +197,6 @@ class Device(ControlParent):
 
     def __str__(self):
         return self.__repr__()
-
-class MidiLoop(Device):
-
-    def __init__(self, *args, **kwargs):
-        self.input,  self.inname  = open_midiinput (0)
-        self.output, self.outname = open_midioutput(1)
-        super().__init__("MidiLoop", 1, *args, **kwargs)
 
 class BCR2k(Device):
        
@@ -243,9 +252,42 @@ class Listener(object):
         print("(%s) %s says %i is now %i" % (self, sender, ID, value))
 
 
+class MidiLoop(Device):
+    """
+    A device that simply forwards all set_control messages from Interface to output (DAW)
+    or the other way from DAW (input) to Interface.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.input,  self.inname  = open_midiinput (11)
+        self.output, self.outname = open_midioutput(12)
+
+        super().__init__("MidiLoop", 1, *args, **kwargs)
+        self.last_sent_values = {ID: 0 for ID in range(1, 129)}
+        self.epsilon = 3
+
+
+    def set_control(self, ID, value, from_input=False, inform_observers=False):
+        """
+        Forwards the CC event to the input or output, depending on the origin
+        """
+        if from_input:
+            last = self.last_sent_values[ID]
+            if value != last:
+#            if value not in range(last - self.epsilon, last + self.epsilon + 1):
+                # CC came from DAW, let the interface know
+                self.control_changed(ID, value)
+            else:
+                dprint(self, "Blocked Feedback from Ableton Live")
+        else:
+            # CC came from Interface, forward to output
+            self.last_sent_values[ID] = value
+            self.send_to_device(ID, value)
+
+
 if __name__ == "__main__":
-#    list_input_ports()
-#    list_output_ports()
+    list_input_ports()
+    list_output_ports()
     bcr = BCR2k(auto_start=False)
     sbcr = Shell(bcr, bcr.update)
 

@@ -18,7 +18,7 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 from targets import get_target, Parameter, SwitchView
 from devices import Device, BCR2k, MidiLoop, Listener, DeviceEvent
 from modifiers import get_modifier
-from queueshell import Shell
+from threadshell import Shell
 
 from util import keys_to_ints, unify, eprint, dprint
 
@@ -165,7 +165,7 @@ class Interface(Listener):
         self.views = [self.view]
 
         self.device_event_dispatch = {
-            DeviceEvent.CC: self.inform,
+            DeviceEvent.CC: self.device_event_callback,
         }
         self.device_q = Queue()
         self.input.add_listener(self.device_q)
@@ -287,16 +287,6 @@ class Interface(Listener):
         else:
             target.trigger(value) 
 
-    def reflect_value(self, target, exclude_IDs=None):
-        """
-        Inform the input device of a value change, possibly excluding
-        certain IDs. Only controls mapped to the given target will
-        be updated.
-        """
-        for ID in self.view.find_IDs_by_target(target):
-            if not exclude_IDs or ID not in exclude_IDs:
-                self.input.set_control(ID, target.value, just_send=True)
-
 
     def reflect_all(self):
         """
@@ -368,7 +358,6 @@ class Interface(Listener):
         Add a configured target. This method checks for duplicates and
         ignores them if detected.
         """
-        target.trigger_callback = self.trigger_callback
         if target.name in self.targets:
             print("Target with same name already exists! Ignoring...")
             return
@@ -397,12 +386,13 @@ class Interface(Listener):
             self.view.map_this(ID, t)
         return t, view
 
-    def inform(self, sender, ID, value):
+    def from_input(self, sender, ID, value):
         """
-        Callback method whenever the input or output devices produce
-        messages to consume (input -> hardware -> controls, output ->
-        daw -> automation).
+        Callback method whenever the input (or output devices) produces
+        messages to consume (input -> hardware -> controls ((, output ->
+        daw -> automation)).
         """
+        assert(sender == self.input)
         try:
             targets = self.view.map[ID]
         except KeyError:
@@ -412,28 +402,77 @@ class Interface(Listener):
         for target in targets:
             # Some targets should not be triggered on an Off, False, 0 value
             if unify(value) in target.trigger_vals:
-                if sender == self.input:
-                    # Perform the triggerion of the target. This might send a
-                    # message to the output device but could also be a meta
-                    # command like switching views
-                    target.trigger(value, reflect=False)
+                real_value = target.trigger(sender, value)
+                if value != real_value:
+                    self.input.set_control(ID, value)
+                self.reflect_target_on_input(target, exclude_IDs=[ID])
 
-                    # Multiple input controls might be mapped to this
-                    # so let's reflect on the input device but exclude the
-                    # ID that issued the value change
-                    self.reflect_value(target, exclude_IDs=[ID])
-                elif sender == self.output:
-                    # Just reflect the value in both target and on the input device
-                    self.set_value(target, value, input_only=True)
+    def reflect_target_on_input(self, target, exclude_IDs=None):
+        """
+        Inform the input device of a value change, possibly excluding
+        certain IDs. Only controls mapped to the given target will
+        be updated.
+        """
+        for ID in self.view.find_IDs_by_target(target):
+            if not exclude_IDs or ID not in exclude_IDs:
+                self.input.set_control(ID, target.value)
 
-    def trigger_callback(self, target):
+
+    def from_output(self, sender, ID, value):
         """
-        Called by a target when it has been triggered
+        Callback method whenever the ouput produces a control change.
+        Inform the target and reflect the value on the input device always.
         """
-        return
-        IDs_mapped = [ID for ID, targets in self.view.map.items() if target in targets]
-        for o in self.observers:
-            o.callback_value(IDs_mapped, target)
+        assert(sender == self.output)
+        # Look for targets connected to the Control ID of the output
+
+        targets = []
+        for target_list in self.view.map.values():
+            for target in target_list:
+                if target.is_connected_to_output(ID):
+                    targets.append(target)
+
+        for target in targets:
+            if unify(value) in target.trigger_vals:
+                # trigger will notify the output again if needed, we don't care
+                real_value = target.trigger(sender, value)
+                # but we need to reflect this value change on the input device
+                self.reflect_target_on_input(target)
+#                for input_ID in self.view.find_IDs_by_target(target):
+#                    self.input.set_control(input_ID, real_value)
+
+    def target_triggered(self, target, value, sender):
+        """
+        Usually targets are modified by some logic in the Interface. If not,
+        the target will call this method to report a value change that happened
+        indepedently. This is our chance to inform self.input of the value change
+        to keep everything in sync.
+        The self.output will already have been notified by the Target itself,
+        if such an action was part of the Target's trigger method.
+        """
+        assert(sender not in (self.input, self.output))
+        if value:
+            for ID in self.view.find_IDs_by_target(target):
+                self.input.set_control(ID, target.value)
+
+    def device_event_callback(self, sender, ID, value):
+        """
+        Is called to handle DeviceEvents from both input and output.
+        Basically forwards the calls to the dedicated from_input and from_output.
+        """
+        if sender == self.input:
+            self.from_input(sender, ID, value)
+        elif sender == self.output:
+            self.from_output(sender, ID, value)
+        else:
+            print("Received DeviceEvent from Device other than input or output:")
+            print(sender, ID, value)
+
+    def to_output(self, cc, value):
+        """
+        Set a control on the output
+        """
+        self.output.set_control(cc, value)
 
     def add_modifier(self, modifier):
         self.modifiers.add(modifier)
@@ -502,7 +541,6 @@ def test2(i):
     t = i.quick_parameter(1)
     for macro in i.input.macros[0][1:]:
         i.view.map_this(macro.ID, t)
-
 
     if True:
         from modifiers import LFOSine

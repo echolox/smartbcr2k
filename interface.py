@@ -382,7 +382,9 @@ class Interface(Listener):
             if unify(value) in target.trigger_vals:
                 real_value = target.trigger(sender, value)
                 if value != real_value:
-                    self.input.set_control(ID, value)
+                    self._set_control(ID, value)
+                else:
+                    self.recent_control_values[ID] = real_value
                 self.reflect_target_on_input(target, exclude_IDs=[ID])
 
 
@@ -474,11 +476,11 @@ class Interface(Listener):
                     getattr(target, "value")
                 except AttributeError:
                     continue
-                self.input.set_control(ID, target.value)
+                self._set_control(ID, target.value)
                 untouched.remove(ID)
 
         for ID in untouched:
-            self.input.set_control(ID, 0)
+            self._set_control(ID, 0)
  
 
     ############## MODIFIERS ####################

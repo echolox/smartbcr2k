@@ -1,4 +1,5 @@
 import sys
+import time
 import itertools
 from collections import namedtuple
 
@@ -12,6 +13,13 @@ from threadshell import Shell
 import devices
 
 Vector2 = namedtuple("Vector2", ["x", "y"])
+
+setters = {QSlider: QSlider.setValue,
+           QPushButton: QPushButton.setDown
+          }
+
+ 
+
 
 class Controller(object):
     """
@@ -76,7 +84,6 @@ class Editor(QMainWindow):
 
         if self.interface and self.controller:
             self.initialize(self.interface, self.controller)
-
 
     def initialize(self, interface, controller):
         """
@@ -223,7 +230,7 @@ class Editor(QMainWindow):
         # Set all controls to the current view's values
         self.reflect_all(self.interface.view)
 
-        # Launc the update Timer
+        # Launch the update Timer
         self.update_editor()
 
     def init_window(self):
@@ -251,19 +258,17 @@ class Editor(QMainWindow):
             for ID, value in changes.items():
                 self.reflect(ID, value)
         finally:
-            QTimer.singleShot(1000 / 30, self.update_editor)
+            QTimer.singleShot(50, self.update_editor)
 
     def reflect(self, ID, value):
         """
         Reflects the value of a control to the widget representing it.
         """
-        widget = self.control_widgets[ID]
-        
-        setters = {QSlider: QSlider.setValue,
-                   QPushButton: QPushButton.setDown
-                  }
-
-        setters[type(widget)](widget, value)
+        try:
+            widget = self.control_widgets[ID]
+            setters[type(widget)](widget, value)
+        except KeyError:
+            return
 
     def reflect_all(self, view):
         """

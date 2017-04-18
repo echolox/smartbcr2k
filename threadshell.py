@@ -14,7 +14,7 @@ from time import sleep
 from threading import Thread
 from util import dprint
 
-TICK_RATE = 5  # in ms
+TICK_RATE = 1  # in ms  # set to 0 to just yield to other threads
 yield_thread = lambda: sleep(TICK_RATE / 1000.)
 
 class ShellResult(Queue):

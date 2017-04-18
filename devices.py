@@ -144,7 +144,7 @@ class Device(ControlParent):
             control = self.controls[ID]
         except KeyError:
             eprint("Control with ID %s not found" % ID)
-            return
+            return None
 
         # The Control might implement some further logic,
         # which can result in a different value being set
@@ -156,7 +156,7 @@ class Device(ControlParent):
         # the control which we can then reflect on the input device
         # If None was returned, the control wants us to ignore it
         if real_value is None:
-            return
+            return None
 
         # Otherwise, depending on where the control change came from
         # inform the hardware devices or possible listeners
@@ -173,6 +173,8 @@ class Device(ControlParent):
         # to all listeners
         if inform_observers and (from_input or real_value != value):
             self.control_changed(ID, real_value)
+
+        return real_value
 
 
     def input_callback(self, event):

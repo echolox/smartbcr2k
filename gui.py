@@ -49,10 +49,15 @@ class Controller(object):
         
         # TODO: Reload everything in UI from Profile
 
-    def value_changed(self, ID, value):
+    def trigger_targets(self, ID, value):
+        """
+        Triggers the target(s) the given ID (of a control) is mapped to.
+        Since this operation should occur in the shelled interface thread
+        we need route through the interface instead of manipulating the
+        targets directly.
+        """
         targets = self.interface.view.map[ID]
-        for target in targets:
-            self.interface.set_value(target, value)
+        self.interface.trigger_targets(self, targets, value)
 
 
 class Editor(QMainWindow):
@@ -71,21 +76,6 @@ class Editor(QMainWindow):
 
         if self.interface and self.controller:
             self.initialize(self.interface, self.controller)
-
-    def init_window(self):
-        """
-        Initialize input device agnostic UI elements
-        """
-        if self.UI_initialized:
-            return
-
-        self.setWindowTitle(self.title)
-        self.resize(self.size.x, self.size.y)
-        self.move(self.position.x, self.position.y)
-
-        
-        self.show()
-        self.UI_initialized = True
 
 
     def initialize(self, interface, controller):
@@ -117,10 +107,8 @@ class Editor(QMainWindow):
         menu_file.addAction(menu_file_save)
         menu_file.addAction(menu_file_load)
 
-
         ### Status Bar
         self.statusBar()
-
 
 
         ### MAIN LAYOUT
@@ -231,21 +219,44 @@ class Editor(QMainWindow):
 
         #self.setLayout(self.layout)
 
+        
+        # Set all controls to the current view's values
+        self.reflect_all(self.interface.view)
+
+        # Launc the update Timer
         self.update_editor()
+
+    def init_window(self):
+        """
+        Initialize device-agnostic UI elements
+        """
+        if self.UI_initialized:
+            return
+
+        self.setWindowTitle(self.title)
+        self.resize(self.size.x, self.size.y)
+        self.move(self.position.x, self.position.y)
+        
+        self.show()
+        self.UI_initialized = True
 
 
     def update_editor(self):
+        """
+        Polls the interface for values to display. Calls itself
+        periodically using QTimer.
+        """
         try:
-            self.reflect_all(self.interface.view)
-#            for ID, control in self.interface.input.controls.items():
-#                self.reflect(ID, control.get_value())
+            changes = self.interface.get_recent_control_values().get() # Returns a promise
+            for ID, value in changes.items():
+                self.reflect(ID, value)
         finally:
             QTimer.singleShot(1000 / 30, self.update_editor)
 
-    def value_changed(self, ID, value):
-        self.controller.value_changed(ID, value)
-
     def reflect(self, ID, value):
+        """
+        Reflects the value of a control to the widget representing it.
+        """
         widget = self.control_widgets[ID]
         
         setters = {QSlider: QSlider.setValue,
@@ -255,18 +266,24 @@ class Editor(QMainWindow):
         setters[type(widget)](widget, value)
 
     def reflect_all(self, view):
+        """
+        Reflects all target values of the view on their respective widgets
+        """
         for ID in self.control_widgets:
             value = self.interface.input.controls[ID].get_value()
             self.reflect(ID, value)
-        
 
-    def callback_value(self, IDs, target):
+
+    ### GUI EVENT CALLBACKS ###
+
+    def value_changed(self, ID, value):
         """
-        Called whenever any value in a target on the interface changed.
-        We also get a list of control IDs mapped to that target.
+        Called when the user changes the value of a Control on a widget.
+        This means the targets this control is mapped to should be
+        triggered.
         """
-        for ID in IDs:
-            self.reflect(ID, target.value)
+        self.controller.trigger_targets(ID, value)
+
 
     def callback_view(self, view, new_view):
         """
@@ -288,6 +305,7 @@ class Editor(QMainWindow):
     def callback_load_profile(self):
         # TODO: Reflect newly loaded profile in UI
         pass
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

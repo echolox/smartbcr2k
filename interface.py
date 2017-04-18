@@ -180,6 +180,8 @@ class Interface(Listener):
 
         self.update_thread = Thread(target=self.main_loop, daemon=True)
 
+        self.recent_control_values = {}
+
         if auto_start:
             self.start()
 
@@ -342,6 +344,23 @@ class Interface(Listener):
             self.view.map_this(ID, t)
         return t, view
 
+    def trigger_targets(self, sender, targets, value):
+        """
+        Call this to trigger a list of targets with a value on behalf
+        of the provided sender.
+        """
+        for target in targets:
+            target.trigger(sender, value)
+
+
+    def get_recent_control_values(self):
+        """
+        Returns the dict of recent control value changes and resets it
+        """
+        copy = self.recent_control_values
+        self.recent_control_values = {}
+        return copy
+
 
     ############## CALLBACKS / EVENT / INPUT HANDLING ################
 
@@ -402,7 +421,17 @@ class Interface(Listener):
         assert(sender not in (self.input, self.output))
         if value:
             for ID in self.view.find_IDs_by_target(target):
-                self.input.set_control(ID, target.value)
+                self._set_control(ID, target.value)
+
+    def _set_control(self, ID, value):
+        """
+        Sets the control of the input device of the Interface and caches
+        the set value in our recent_control_values dict.
+        """
+        set_value = self.input.set_control(ID, value).get()  # Returns a promise
+        if set_value is not None:
+            self.recent_control_values[ID] = set_value
+        
 
     def device_event_callback(self, sender, ID, value):
         """
@@ -431,7 +460,7 @@ class Interface(Listener):
         """
         for ID in self.view.find_IDs_by_target(target):
             if not exclude_IDs or ID not in exclude_IDs:
-                self.input.set_control(ID, target.value)
+                self._set_control(ID, target.value)
 
     def reflect_all_on_input(self):
         """
@@ -463,6 +492,8 @@ class Interface(Listener):
             self.modifier.remove(modifier)
         except KeyError:
             pass
+
+    ############## UPDATING ####################
 
     def start(self):
         self.update_thread.start()

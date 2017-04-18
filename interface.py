@@ -180,10 +180,19 @@ class Interface(Listener):
 
         self.update_thread = Thread(target=self.main_loop, daemon=True)
 
-        self.recent_control_values = {}
+        self.recent_changes = {}
+        self.reset_recent_changes()
 
         if auto_start:
             self.start()
+
+    def reset_recent_changes(self):
+        self.recent_changes = {
+            "controls": {},
+            "targets": {},
+            "views": {"active": self.view,
+                      "all": self.views}
+        }
 
     def make_profile(self):
         p = {"input": self.input.name,
@@ -353,12 +362,12 @@ class Interface(Listener):
             target.trigger(sender, value)
 
 
-    def get_recent_control_values(self):
+    def get_recent_changes(self):
         """
         Returns the dict of recent control value changes and resets it
         """
-        copy = self.recent_control_values
-        self.recent_control_values = {}
+        copy = self.recent_changes
+        self.reset_recent_changes()
         return copy
 
 
@@ -384,7 +393,7 @@ class Interface(Listener):
                 if value != real_value:
                     self._set_control(ID, value)
                 else:
-                    self.recent_control_values[ID] = real_value
+                    self.recent_changes["controls"][ID] = real_value
                 self.reflect_target_on_input(target, exclude_IDs=[ID])
 
 
@@ -428,11 +437,11 @@ class Interface(Listener):
     def _set_control(self, ID, value):
         """
         Sets the control of the input device of the Interface and caches
-        the set value in our recent_control_values dict.
+        the set value in our recent_changes dict.
         """
         set_value = self.input.set_control(ID, value).get()  # Returns a promise
         if set_value is not None:
-            self.recent_control_values[ID] = set_value
+            self.recent_changes["controls"][ID] = set_value
         
 
     def device_event_callback(self, sender, ID, value):

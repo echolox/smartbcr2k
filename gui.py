@@ -254,9 +254,10 @@ class Editor(QMainWindow):
         periodically using QTimer.
         """
         try:
-            changes = self.interface.get_recent_control_values().get() # Returns a promise
-            for ID, value in changes.items():
+            changes = self.interface.get_recent_changes().get() # Returns a promise
+            for ID, value in changes["controls"].items():
                 self.reflect(ID, value)
+            self.reflect_views(changes["views"]["all"], changes["views"]["active"])
         finally:
             QTimer.singleShot(50, self.update_editor)
 
@@ -277,6 +278,22 @@ class Editor(QMainWindow):
         for ID in self.control_widgets:
             value = self.interface.input.controls[ID].get_value()
             self.reflect(ID, value)
+            
+    def reflect_views(self, all_views, active_view):
+        """
+        Called whenever the active view in the interface has changed
+        """
+        # @TODO: Check for new views
+#        if new_view:
+#            self.view_selector.addItem(view.name)
+
+        # Reflect current View in the general UI
+        for index in range(self.view_selector.count()):
+            item = self.view_selector.item(index)
+            if item.text() == active_view.name:
+                self.view_selector.setCurrentRow(index)
+                break
+
 
 
     ### GUI EVENT CALLBACKS ###
@@ -289,23 +306,6 @@ class Editor(QMainWindow):
         """
         self.controller.trigger_targets(ID, value)
 
-
-    def callback_view(self, view, new_view):
-        """
-        Called whenever the active view in the interface has changed
-        """
-        # Reflect values on all controls
-        self.reflect_all(view) 
-
-        if new_view:
-            self.view_selector.addItem(view.name)
-
-        # Reflect current View in the general UI
-        for index in range(self.view_selector.count()):
-            item = self.view_selector.item(index)
-            if item.text() == view.name:
-                self.view_selector.setCurrentRow(index)
-                break
 
     def callback_load_profile(self):
         # TODO: Reflect newly loaded profile in UI

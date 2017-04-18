@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHB
 from PyQt5.QtGui import QImage, QPixmap, QFont, QPalette, QBrush, QColor
 from PyQt5.QtCore import Qt, QTimer
 
-from ctrl import Interface, View, load_profile, save_profile
+from interface import Interface, View, load_profile, save_profile
 from devices import BCR2k, MidiLoop
 from threadshell import Shell
 import devices

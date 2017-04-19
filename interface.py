@@ -2,6 +2,7 @@ import time
 import rtmidi
 import json
 import sys
+import argparse
 from queue import Queue, Empty, Full
 
 import traceback
@@ -621,6 +622,11 @@ def fun(bcr):
         x += 0.2
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run the commandline interface')
+    parser.add_argument('-p', '--profile', default="default.bcr", help='which profile to load')
+    args = parser.parse_args()
+  
+
     bcr = BCR2k(auto_start=False)
     loop = MidiLoop(auto_start=False)
     print("Devices started")
@@ -628,8 +634,7 @@ if __name__ == "__main__":
     interface = Interface(bcr, loop)
     print("Interface started")
 
-#    fun(bcr)
-    test2(interface)
+    load_profile(interface, args.profile)
 
     try:
         while True:

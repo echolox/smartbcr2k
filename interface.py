@@ -398,7 +398,7 @@ class Interface(Listener):
                 self.reflect_target_on_input(target, exclude_IDs=[ID])
 
 
-    def from_output(self, sender, ID, value):
+    def from_output(self, sender, channel, cc, value):
         """
         Callback method whenever the ouput produces a control change.
         Inform the target and reflect the value on the input device always.
@@ -458,7 +458,7 @@ class Interface(Listener):
             print("Received DeviceEvent from Device other than input or output:")
             print(sender, ID, value)
 
-    def to_output(self, cc, value):
+    def to_output(self, channel, cc, value):
         """
         Set a control on the output
         """
@@ -550,7 +550,7 @@ def load_profile(interface, filename):
 
 def save_profile(interface, filename):
     with open(filename, "w") as outfile:
-        json.dump(interface.make_profile(), outfile)
+        json.dump(interface.make_profile(), outfile, sort_keys=True, indent=2)
         print("Saved to %s" % filename)
 
 

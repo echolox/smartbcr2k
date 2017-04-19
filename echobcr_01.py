@@ -1,44 +1,92 @@
 from modifiers import LFOSine
+from interface import View
+from targets import Parameter, SwitchView
+from util import flatten
 
 def create(i):
-    t = i.quick_parameter(1)
-    for macro in i.input.macros[0][1:]:
-        i.view.map_this(macro.ID, t)
+    bcr = i.input
 
-    if True:
-        from modifiers import LFOSine
-        s = LFOSine(frequency=1)
-        i.add_modifier(s)
-        s.target(t)
+    ### MACRO BANKS ###
+    ## Dials: Parameters
+    ## Buttons: Not used
+    macros = bcr.macros
 
-    init_view = i.view
-    _, second_view = i.quick_view(105)
-    i.quick_view(105, to_view=init_view, on_view=second_view)
+    # 1: Empty for now. Later: Dynamic Targets
+    for macro in i.input.macros[0]:
+        pass
 
-    # Dials
-    i.quick_parameter(81)
-    i.quick_parameter(82)
-    t = i.quick_parameter(83)
-    i.view.map_this(84, t)
+    # 2: Parameters (Patch selection)
+    for macro in i.input.macros[1]:
+        i.quick_parameter(macro.ID)
 
+    # 3: Parameters (Reverb Send)
+    for macro in i.input.macros[1]:
+        i.quick_parameter(macro.ID)
 
-    # Command button momentary
-    i.quick_parameter(106)
+    # 4: Parameters (Delay Send)
+    for macro in i.input.macros[1]:
+        i.quick_parameter(macro.ID)
 
-    i.switch_to_view(second_view)
+    ### MENU BUTTONS ###
+    ## Top Row: Switch to View of that Track
+    ## Buttom Row: Switch to View of that Effect per Track
+    ## First we set up the targets and then distribute them to the eight views
+    to_init_view = SwitchView("To_INIT", i, i.view)
+    views_tracks = [View(bcr, "Track_%i" % it) for it in range(1, 8+1)]
+    views_fx     = [View(bcr, "FX_%i"    % it) for it in range(1, 8+1)]
+    switch_tracks = [SwitchView("To_T%i" % (it + 1), i, views_tracks[it]) for it in range(8)]
+    switch_fx =     [SwitchView("To_FX%i" % (it + 1), i, views_fx[it]) for it in range(8)]
+    
+    next_cc = i.parameter_maker.next_cc
+    def ccc(channel=0, cc=0):
+        while channel <= 16:
+            yield channel, cc
 
-    i.quick_parameter(81)
-    i.quick_parameter(82)
-    t = i.quick_parameter(83)
-    i.view.map_this(84, t)
+            cc = (cc + 1) % 128
+            if cc == 0:  # We wrapped around
+                channel += 1
 
-    # Command button toggle
-    tt = i.quick_parameter(106)
-    second_view.configuration[106]["toggle"] = True
-    # TODO: This is indirect configuration
+    gen = ccc(7, next_cc)
 
+    dials = flatten(bcr.dialsc)
+    for track_index in range(8):
+        view = views_tracks[track_index]
 
-    i.switch_to_view(init_view)
-    i.view.map_this(107, tt)
-    i.view.configuration[107]["toggle"] = True
+        fx_onoff = []
+        it = 1
+        for channel, cc in [next(gen)] * 8:
+            p = Parameter("T%i_FX%i_OnOff" % (track_index + 1, it),
+                          i, channel, cc, is_button=True) 
+            fx_onoff.append(p)
+            it += 1
 
+        fx_params = []
+        fx_index = 1
+        subparam_index = 0
+        for channel, cc in [next(gen)] * 24:
+            p = Parameter("T%i_FX%i_%i" % (track_index + 1, fx_index, subparam_index + 1),
+                          i, channel, cc)
+            fx_params.append(p)
+            subparam_index = (subparam_index + 1) % 3
+            if subparam_index == 0:
+                fx_index += 1
+
+        # First Row Buttons: Switch To View
+        it = 0
+        for button, target in zip(bcr.menu_buttons[0], switch_tracks):
+            if it != track_index:
+                view.map_this(button.ID, target)
+            else:
+                view.map_this(button.ID, to_init_view)
+            it += 1
+
+        # Second Row Buttons: FX On Off
+        for button, target in zip(bcr.menu_buttons[1], fx_onoff):
+            view.map_this(button.ID, target)
+         
+        # Dials:
+        for dial, target in zip(dials, fx_params):
+            view.map_this(dial.ID, target)
+
+        
+        i.views.append(view) 

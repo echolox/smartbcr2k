@@ -32,16 +32,42 @@ def select_port(port_type="input"):
 class DeviceEvent(Enum):
     CC = 1
 
+
+def ccc2ID(channel, cc, device_number=0):
+    """
+    Turns a combination of channel and cc into a Control ID.
+
+    The ID is nothing more than an enumeration of all possible
+    channel + cc combinations
+    """
+    return (channel - 1) * 128 + cc + device_number * 128 * 16
+
+def ID2ccc(ID, device_number=0):
+    """
+    Turns a control ID into a combination of channel + cc.
+    """
+    ID -= device_number * 128 * 16
+    return (ID // 128) + 1, ID % 128
+
+
+# @TODO: Move to test suite
+test_cases = [ (1, 0, 0), (1, 1, 1), (1, 127, 127),
+               (2, 0, 128), (16, 127, 16 * 128 - 1) 
+             ]
+for channel, cc, ID in test_cases:
+    assert(ccc2ID(channel, cc) == ID)
+    assert(ID2ccc(ID) == (channel, cc))
+
+
 class Device(ControlParent):
 
-    def __init__(self, name="unnamed", channel=7, interactive=False, auto_start=True):
+    def __init__(self, name="unnamed", interactive=False, auto_start=True):
         self.name = name
-        self.channel = channel 
         if interactive:
             self.output, self.outname = open_midioutput(select_port("output"))
             self.input,  self.inname  = open_midiinput (select_port("input"))
 
-        self.controls = {} 
+        self.controls = {}
 
         self.blinken = []
         self.blink_state = 0
@@ -82,8 +108,9 @@ class Device(ControlParent):
             print("(Exception): Tried to remove Queue that wasn't registered:", q)
             pass
 
-    def send_to_device(self, cc, value):
-        channel_byte = CONTROL_CHANGE | (self.channel - 1)
+    def send_to_device(self, ID, value):
+        channel, cc = ID2ccc(ID)
+        channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])
 
     def start(self):
@@ -182,7 +209,10 @@ class Device(ControlParent):
         Handles a Midi event from the input device
         """
         message, deltatime = event
-        _, ID, value = message
+        channel_byte, cc, value = message
+        channel = (channel_byte - CONTROL_CHANGE) + 1
+        ID = ccc2ID(channel, cc)
+        print(channel, cc, ID)
         self.set_control(ID, value, from_input=True, inform_observers=True)
 
     def control_changed(self, ID, value):
@@ -204,43 +234,43 @@ class Device(ControlParent):
 
 class BCR2k(Device):
        
-    def __init__(self, *args, **kwargs):
+    def __init__(self, channel_offset=7, *args, **kwargs):
         # @Temp: Figure out the ports differently
         self.output, self.outname = open_midioutput(DEFAULT_OUT_PORT)
         self.input,  self.inname  = open_midiinput (DEFAULT_IN_PORT)
-        super().__init__("BCR2k", 7, *args, **kwargs)
+        self.channel_offset = channel_offset
+        super().__init__("BCR2k", *args, **kwargs)
+
 
     def setup_controls(self):
-        self.macros = [[], [], [], []]
-        for i in range(1, 32 + 1):
-            self.controls[i] = Dial(i, self)
-            self.macros[(i-1) // 8].append(self.controls[i])
+        ID = ccc2ID(self.channel_offset, 0) + 1  # Because I use Channel 7, starting with cc 1
+                                                 # That's gonna change eventually
+        def make_controls(ID, n, Cls, *args, **kwargs):
+            newly_added = []
+            for i in range(n):
+                c = self.controls[ID] = Cls(ID, self, *args, **kwargs)
+                newly_added.append(c)
+                ID += 1
+            return ID, newly_added
 
-        self.macro_buttons = [[], [], [], []]
-        for i in range(33, 64 + 1):
-            self.controls[i] = Button(i, self, toggle=False)
-            self.macro_buttons[(i-33) // 8].append(self.controls[i])
-
-        self.menu_buttons = [[],[]]
-        for i in range(65, 80 + 1):
-            self.controls[i] = Button(i, self, toggle=True)
-            self.menu_buttons[(i-65) // 8].append(self.controls[i])
+        ID, self.macros = make_controls(ID, 32, Dial)
+        ID, self.macro_buttons = make_controls(ID, 32, Button, toggle=False)
+        ID, self.menu_buttons = make_controls(ID, 16, Button, toggle=True)
+        ID, self.dials = make_controls(ID, 24, Dial)
+        ID, self.command_buttons = make_controls(ID, 4, Button, toggle=False)
 
         self.dialsc = [[] for _ in range(8)]
         self.dialsr = [[] for _ in range(3)]
-        self.dials  = []
-        for i in range(81, 104 + 1):
-            self.controls[i] = Dial(i, self)
-            self.dials.append(self.controls[i])
-            z = i - 81
-            self.dialsc[z % 8].append(self.controls[i])
-            self.dialsr[z // 8].append(self.controls[i])
+        row = 0
+        column = 0
+        for dial in self.dials:
+            self.dialsr[row].append(dial)
+            self.dialsc[column].append(dial)
 
-        self.command_buttons = []
-        for i in range(105, 108 + 1):
-            self.controls[i] = Button(i, self, toggle=False)
-            self.command_buttons.append(self.controls[i])
-
+            column += 1
+            if column == 8:
+                column = 0
+                row += 1
 
 class Listener(object):
     """
@@ -256,37 +286,123 @@ class Listener(object):
         print("(%s) %s says %i is now %i" % (self, sender, ID, value))
 
 
-class MidiLoop(Device):
+
+class OutputPort(object):
+
     """
-    A device that simply forwards all set_control messages from Interface to output (DAW)
-    or the other way from DAW (input) to Interface.
+    An output port forwards whatever messages we send into it to its connected
+    midi output while also reporting back and values it receives. Example:
+    Interface <-+-> Device
+                |
+                +-> OutputPort <-> Virtual Midi Cable <-> Ableton Live
     """
+    def __init__(self, name="unnamed", interactive=False, auto_start=True):
+        self.name = name
+        if interactive:
+            self.output, self.outname = open_midioutput(select_port("output"))
+            self.input,  self.inname  = open_midiinput (select_port("input"))
+
+        self.thread = Thread(target=self.main_loop, daemon=True)
+
+        self.last_sent_values = [{ID: 0 for ID in range(1, 129)} for _ in range(17)]
+        self.listener_qs = []
+
+        if auto_start:
+            if not (self.input and self.output):
+                print("Could not start the Device thread without any input or output configured")
+            else:
+                self.start()
+
+    def add_listener(self, q):
+        """
+        Add a listener queue to be informed of DeviceEvents
+        """
+        if q not in self.listener_qs:
+            self.listener_qs.append(q)
+
+    def remove_listener(self, q):
+        """
+        Removes a queue from the listener qs
+        """
+        try:
+            self.listener_qs.remove(q)
+        except ValueError:
+            print("(Exception): Tried to remove Queue that wasn't registered:", q)
+            pass
+
+    def start(self):
+        """
+        Start the main_loop of this device
+        """
+        self.thread.start()
+
+    def main_loop(self):
+        while True:
+            self.update()
+            yield_thread()
+
+    def update(self):
+        t = time.time()
+
+        # Handle midi events
+        event = self.input.get_message()
+        if event:
+            self.input_callback(event)
+
+    def cc(self, channel, cc, value, inform_observers=False):
+        """
+        Forwards the CC event to the output
+        """
+        self.last_sent_values[ID] = value
+        channel_byte = CONTROL_CHANGE | (channel - 1)
+        self.output.send_message([channel_byte, cc, value])
+
+    def input_callback(self, event):
+        """
+        Handles a Midi event from the DAW
+        """
+        message, deltatime = event
+        channel, cc, value = message
+        ID = ccc2ID(channel, cc)
+
+        worth_reporting = False
+        try: 
+            if value != self.last_sent_values[ID]:
+                worth_reporting = True
+        except KeyError:
+            pass
+
+        if worth_reporting:
+            self.received(channel, cc, value)
+
+    def received(self, channel, cc, value):
+        """
+        Inform the observers that a control value has changed by issuing
+        an OutputEvent.CC.
+        """
+        for listener in self.listener_qs:
+            try:
+                listener.put_nowait((OutputEvent.CC, self, channel, cc, value))
+            except Full:
+                print(listener, "is full")
+
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.__repr__()
+
+class OutputEvent(Enum):
+    CC = 1
+
+
+class MidiLoop(OutputPort):
 
     def __init__(self, *args, **kwargs):
         self.input,  self.inname  = open_midiinput (DEFAULT_LOOP_IN)
         self.output, self.outname = open_midioutput(DEFAULT_LOOP_OUT)
+        super().__init__("MidiLoop", *args, **kwargs)
 
-        super().__init__("MidiLoop", 1, *args, **kwargs)
-        self.last_sent_values = {ID: 0 for ID in range(1, 129)}
-        self.epsilon = 3
-
-
-    def set_control(self, ID, value, from_input=False, inform_observers=False):
-        """
-        Forwards the CC event to the input or output, depending on the origin
-        """
-        if from_input:
-            last = self.last_sent_values[ID]
-            if value != last:
-#            if value not in range(last - self.epsilon, last + self.epsilon + 1):
-                # CC came from DAW, let the interface know
-                self.control_changed(ID, value)
-            else:
-                dprint(self, "Blocked Feedback from Ableton Live")
-        else:
-            # CC came from Interface, forward to output
-            self.last_sent_values[ID] = value
-            self.send_to_device(ID, value)
 
 
 if __name__ == "__main__":

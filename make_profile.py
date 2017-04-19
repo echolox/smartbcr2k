@@ -12,7 +12,7 @@ if __name__ == "__main__":
     if args.outfilename:
         outfilename = args.outfilename
     else:
-        outfilename = args.script.replace(".py", ".bcr")
+        outfilename = "%s.bcr" % args.script
 
     bcr = BCR2k(auto_start=False)
     loop = MidiLoop(auto_start=False)

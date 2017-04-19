@@ -1,6 +1,7 @@
 import sys
 import time
 import itertools
+import argparse
 from threading import Lock
 from collections import namedtuple
 
@@ -325,6 +326,12 @@ class Editor(QMainWindow):
 
 
 if __name__ == '__main__':
+
+
+    parser = argparse.ArgumentParser(description='Create a profile from a script.')
+    parser.add_argument('-p', '--profile', default="default.bcr", help='which profile to load')
+    args = parser.parse_args()
+
     app = QApplication(sys.argv)
 
     # Setup Devices and Interface
@@ -334,7 +341,7 @@ if __name__ == '__main__':
 
     interface = Interface(bcr, loop, auto_start=False)
     print(">> Interface started")
-    load_profile(interface, "default.bcr")
+    load_profile(interface, args.profile)
 
     # Create GUI
     editor = Editor()

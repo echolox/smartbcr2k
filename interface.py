@@ -292,6 +292,7 @@ class Interface(Listener):
         be added to the Interface's view catalog and all targets of
         that view will be added to the total list of targets.
         """
+        print(">>>", view)
         if type(view) == str:
             # Find view by name
             view = list(filter(lambda v: v.name==view, self.views))

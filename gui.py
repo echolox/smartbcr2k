@@ -1,6 +1,7 @@
 import sys
 import time
 import itertools
+from threading import Lock
 from collections import namedtuple
 
 from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QLabel, QComboBox, QListWidget, QLineEdit, QAction, QMenuBar, QMainWindow, QSlider
@@ -18,12 +19,11 @@ setters = {QSlider: QSlider.setValue,
            QPushButton: QPushButton.setDown
           }
 
- 
-
 
 class Controller(object):
     """
-    Communicates between Editor (GUI) and Interface (Model)
+    Takes care of "higher level" commands or command sequences to be
+    issued to the interface. It's the 'business logic' part.
     """
 
     def __init__(self, interface, editor):
@@ -85,6 +85,9 @@ class Editor(QMainWindow):
         if self.interface and self.controller:
             self.initialize(self.interface, self.controller)
 
+        self.locks = {"views": Lock()
+                     }
+
     def initialize(self, interface, controller):
         """
         Initialize UI elements dependent on the interface and input device
@@ -132,8 +135,7 @@ class Editor(QMainWindow):
         self.view_selector = QListWidget()
         self.view_selector.addItems((view.name for view in self.interface.views))
         self.view_selector.setCurrentRow(self.interface.views.index(self.interface.view))
-        self.view_selector.currentItemChanged.connect(
-            lambda index: self.interface.switch_to_view(self.view_selector.currentItem().text()))
+        self.view_selector.itemClicked.connect(self.view_changed)
         self.view_selector.setMinimumWidth(100)
         self.view_layout.addWidget(self.view_selector)
 
@@ -233,6 +235,7 @@ class Editor(QMainWindow):
         # Launch the update Timer
         self.update_editor()
 
+
     def init_window(self):
         """
         Initialize device-agnostic UI elements
@@ -257,7 +260,9 @@ class Editor(QMainWindow):
             changes = self.interface.get_recent_changes().get() # Returns a promise
             for ID, value in changes["controls"].items():
                 self.reflect(ID, value)
-            self.reflect_views(changes["views"]["all"], changes["views"]["active"])
+
+            with self.locks["views"]:
+                self.reflect_views(changes["views"]["all"], changes["views"]["active"])
         finally:
             QTimer.singleShot(50, self.update_editor)
 
@@ -287,16 +292,23 @@ class Editor(QMainWindow):
 #        if new_view:
 #            self.view_selector.addItem(view.name)
 
+        # @TODO: Shit's flickering
         # Reflect current View in the general UI
-        for index in range(self.view_selector.count()):
-            item = self.view_selector.item(index)
-            if item.text() == active_view.name:
-                self.view_selector.setCurrentRow(index)
-                break
+        if active_view.name != self.view_selector.currentItem().text():
+            for index in range(self.view_selector.count()):
+                item = self.view_selector.item(index)
+                if item.text() == active_view.name:
+                    self.view_selector.setCurrentItem(item)
+                    break
 
 
 
     ### GUI EVENT CALLBACKS ###
+
+    def view_changed(self, item):
+        view_name = item.text()
+        with self.locks["views"]:
+            self.interface.switch_to_view(view_name).get()  # Forces blocking
 
     def value_changed(self, ID, value):
         """

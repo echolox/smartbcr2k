@@ -27,6 +27,16 @@ def create(i):
     for macro in bcr.macro_bank(3):
         i.quick_parameter(macro.ID)
 
+    # MAIN VIEW BUTTONS AND DIALS
+    for button in bcr.menu_buttons:
+        i.quick_parameter(button.ID)
+
+    for dial in bcr.dials:
+        i.quick_parameter(dial.ID)
+        
+    for command in bcr.command_buttons:
+        i.quick_parameter(command.ID)
+
     ### MENU BUTTONS ###
     ## Top Row: Switch to View of that Track
     ## Buttom Row: Switch to View of that Effect per Track

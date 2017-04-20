@@ -13,7 +13,7 @@ def create(i):
 
     # 1: Empty for now. Later: Dynamic Targets
     for macro in bcr.macro_bank(0):
-        pass
+        i.quick_parameter(macro.ID)
 
     # 2: Parameters (Patch selection)
     for macro in bcr.macro_bank(1):
@@ -28,8 +28,6 @@ def create(i):
         i.quick_parameter(macro.ID)
 
     # MAIN VIEW BUTTONS AND DIALS
-    for button in bcr.menu_buttons:
-        i.quick_parameter(button.ID)
 
     for dial in bcr.dials:
         i.quick_parameter(dial.ID)
@@ -46,6 +44,12 @@ def create(i):
     views_fx     = [View(bcr, "FX_%i"    % (it + 1)) for it in range(8)]
     switch_tracks = [SwitchView("To_T%i" % (it + 1), i, views_tracks[it]) for it in range(8)]
     switch_fx =     [SwitchView("To_FX%i" % (it + 1), i, views_fx[it]) for it in range(8)]
+
+    for button, to_track in zip(bcr.menu_rows(0), switch_tracks):
+        i.view.map_this(button.ID, to_track)
+    
+    for button, to_fx in zip(bcr.menu_rows(1), switch_fx):
+        i.view.map_this(button.ID, to_fx)
     
     next_cc = i.parameter_maker.next_cc
     # @MOVE: This out into util or something
@@ -57,7 +61,7 @@ def create(i):
             if cc == 0:  # We wrapped around
                 channel += 1
 
-    gen = ccc(7, next_cc)
+    gen = ccc(1, next_cc)
 
     dials = flatten(bcr.dialsc)
     for track_index in range(8):
@@ -75,7 +79,7 @@ def create(i):
         fx_params = []
         fx_index = 1
         subparam_index = 0
-        for channel, cc in [next(gen)] * 24:
+        for channel, cc in [next(gen) for _ in range(24)]:
             p = Parameter("T%i_FX%i_%i" % (track_index + 1, fx_index, subparam_index + 1),
                           i, channel, cc)
             fx_params.append(p)
@@ -101,3 +105,6 @@ def create(i):
             view.map_this(dial.ID, target)
         
         i.views.append(view) 
+
+    for view in views_fx:
+        i.views.append(view)

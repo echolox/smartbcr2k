@@ -295,10 +295,11 @@ class Interface(Listener):
         """
         if type(view) == str:
             # Find view by name
-            view = list(filter(lambda v: v.name==view, self.views))
-            if len(view) != 1:
+            views = list(filter(lambda v: v.name==view, self.views))
+            if len(views) != 1:
+                print("View by the name %s not in interface.views" % view)
                 raise KeyError
-            view = view[0]
+            view = views[0]
 
         if self.view and self.view == view:  # Nothing to be done
             return
@@ -521,9 +522,12 @@ class Interface(Listener):
         try:
             event, *data = self.device_q.get_nowait()
             try:
-                self.device_event_dispatch[event](*data)
+                func = self.device_event_dispatch[event]
             except KeyError:
-                print(self, "Cannot handle event of type", event.name, file=sys.stderr)
+                print(self, "Cannot handle event of type", event, file=sys.stderr)
+                return
+            func(*data)
+
         except Empty:
             pass
 

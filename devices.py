@@ -128,9 +128,12 @@ class Device(ControlParent):
         t = time.time()
 
         # Handle midi events
-        event = self.input.get_message()
-        if event:
-            self.input_callback(event)
+        while(True):
+            event = self.input.get_message()
+            if event:
+                self.input_callback(event)
+            else:
+                break
 
         # Blinking routine
         if (t - self.last_blink) > 0.5:
@@ -365,6 +368,7 @@ class OutputPort(object):
         self.last_sent_values[ID] = value
         channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])
+        print(channel, cc, value)
 
     def input_callback(self, event):
         """
@@ -400,6 +404,7 @@ class OutputPort(object):
 
     def __str__(self):
         return self.__repr__()
+
 
 class OutputEvent(Enum):
     CC = 1

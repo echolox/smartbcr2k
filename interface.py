@@ -46,7 +46,7 @@ class ParameterMaker(object):
             raise Exhausted
 
         name = "%s_%i" % (self.prefix, self.next_cc)
-        t = Parameter(name, self.interface, self.next_cc, is_button=is_button)        
+        t = Parameter(name, self.interface, self.channel, self.next_cc, is_button=is_button)        
         self.next_cc += 1
         if self.next_cc > 128:
             if self.expand and self.channel < 16:
@@ -380,7 +380,6 @@ class Interface(Listener):
         messages to consume (input -> hardware -> controls ((, output ->
         daw -> automation)).
         """
-        assert(sender == self.input)
         try:
             targets = self.view.map[ID]
         except KeyError:
@@ -409,7 +408,7 @@ class Interface(Listener):
         targets = []
         for target_list in self.view.map.values():
             for target in target_list:
-                if target.is_connected_to_output(ID):
+                if target.is_connected_to_output(channel, cc):
                     targets.append(target)
 
         for target in targets:
@@ -462,7 +461,7 @@ class Interface(Listener):
         """
         Set a control on the output
         """
-        self.output.set_control(cc, value)
+        self.output.cc(channel, cc, value)
 
     def reflect_target_on_input(self, target, exclude_IDs=None):
         """
@@ -635,6 +634,7 @@ if __name__ == "__main__":
     print("Interface started")
 
     load_profile(interface, args.profile)
+
 
     try:
         while True:

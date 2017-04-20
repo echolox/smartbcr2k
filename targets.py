@@ -45,7 +45,7 @@ class Target(object):
         return self.name
 
     def __str__(self):
-        return self.__repr__
+        return self.__repr__()
 
 class SwitchView(Target):
     """
@@ -166,10 +166,10 @@ class Parameter(ValueTarget):
 
     @classmethod
     def blank(self, parent):
-        return Parameter("unnamed", parent, 0)
+        return Parameter("unnamed", parent, 1, 0)
 
-    def is_connected_to_output(self, ID):
-        return ID == self.cc
+    def is_connected_to_output(self, channel, cc):
+        return channel == self.channel and cc == self.cc
 
 from inspect import isclass
 TARGETS = {C.__name__: C for C in globals().values() if isclass(C) and issubclass(C, Target)}

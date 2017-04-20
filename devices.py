@@ -212,7 +212,6 @@ class Device(ControlParent):
         channel_byte, cc, value = message
         channel = (channel_byte - CONTROL_CHANGE) + 1
         ID = ccc2ID(channel, cc)
-        print(channel, cc, ID)
         self.set_control(ID, value, from_input=True, inform_observers=True)
 
     def control_changed(self, ID, value):
@@ -272,6 +271,15 @@ class BCR2k(Device):
                 column = 0
                 row += 1
 
+    def macro_bank(self, bank):
+        return self.macros[bank * 8: bank * 8 + 8]
+
+    def macro_bank_buttons(self, bank):
+        return self.macros_buttons[bank * 8: bank * 8 + 8]
+
+    def menu_rows(self, row):
+        return self.menu_buttons[row * 8: row * 8 + 8]
+
 class Listener(object):
     """
     Can be added to a device's listeners list
@@ -304,7 +312,7 @@ class OutputPort(object):
 
         self.thread = Thread(target=self.main_loop, daemon=True)
 
-        self.last_sent_values = [{ID: 0 for ID in range(1, 129)} for _ in range(17)]
+        self.last_sent_values = {}
         self.listener_qs = []
 
         if auto_start:
@@ -353,6 +361,7 @@ class OutputPort(object):
         """
         Forwards the CC event to the output
         """
+        ID = ccc2ID(channel, cc)
         self.last_sent_values[ID] = value
         channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])

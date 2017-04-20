@@ -141,7 +141,6 @@ class Parameter(ValueTarget):
         Forwards the value to the configured (output) Device with
         the transmitted value.
         """
-        print(self, value)
         if value is not None:
             if self.is_button:
                 if value:

@@ -126,3 +126,5 @@ def create(i):
                 view.map_this(bcr.dialsc[track][subparam].ID, p)
 
         i.views.append(view)
+
+    # TODO: Some buttons shouldn't be toggle in some views

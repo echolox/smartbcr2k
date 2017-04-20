@@ -520,14 +520,17 @@ class Interface(Listener):
         time_now = time.time()
 
         # Handle DeviceEvent queue
+        max_messages = 50
         try:
-            event, *data = self.device_q.get_nowait()
-            try:
-                func = self.device_event_dispatch[event]
-            except KeyError:
-                print(self, "Cannot handle event of type", event, file=sys.stderr)
-                return
-            func(*data)
+            while max_messages > 0:
+                event, *data = self.device_q.get_nowait()
+                max_messages -= 1
+                try:
+                    func = self.device_event_dispatch[event]
+                except KeyError:
+                    print(self, "Cannot handle event of type", event, file=sys.stderr)
+                    continue
+                func(*data)
 
         except Empty:
             pass

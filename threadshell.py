@@ -81,16 +81,19 @@ class Shell(object):
         """
         while self._running:
             try:
-                # Handle incoming calls from the queue
-                while True:
+                # Handle incoming calls from the queue ...
+                max_calls = 50
+                while max_calls > 0:  # ... till a max is reached ...
                     call, result, args, kwargs = self._q.get_nowait()
-#                    dprint(self, call)
+                    max_calls -= 1
                     result.put(call(*args, **kwargs))
             except Empty:
-                # until nothing's left on it
+                # ... or until nothing's left
                 pass
 
             # Run the update function from the encapsulated object
+            # setting a maximum on calls above assures the update
+            # function won't starve
             self._u()
 
             # Yield thread time

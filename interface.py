@@ -213,6 +213,7 @@ class Interface(Listener):
             m = v["map"]
             for ID, targets in view.map.items():
                 for target in targets:
+#                    print(target)
                     m.append(target.serialize(ID))
             p["views"].append(v)
 

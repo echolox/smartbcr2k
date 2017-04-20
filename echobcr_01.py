@@ -106,5 +106,23 @@ def create(i):
         
         i.views.append(view) 
 
-    for view in views_fx:
+    for index, view in enumerate(views_fx):
+        it = 0
+        for button, target in zip(bcr.menu_rows(1), switch_fx):
+            if it != index:
+                view.map_this(button.ID, target)
+            else:
+                view.map_this(button.ID, to_init_view)
+            it += 1
+
+
+
+        for track, t_view in enumerate(views_tracks):
+            onoff = t_view.map[bcr.menu_rows(1)[index].ID][0] 
+            params = [t_view.map[d.ID][0] for d in bcr.dialsc[index]]
+
+            view.map_this(bcr.menu_rows(0)[track].ID, onoff)
+            for subparam, p in enumerate(params):
+                view.map_this(bcr.dialsc[track][subparam].ID, p)
+
         i.views.append(view)

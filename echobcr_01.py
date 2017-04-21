@@ -46,9 +46,11 @@ def create(i):
     switch_fx =     [SwitchView("To_FX%i" % (it + 1), i, views_fx[it]) for it in range(8)]
 
     for button, to_track in zip(bcr.menu_rows(0), switch_tracks):
+        i.view.configuration[button.ID]["toggle"] = False
         i.view.map_this(button.ID, to_track)
     
     for button, to_fx in zip(bcr.menu_rows(1), switch_fx):
+        i.view.configuration[button.ID]["toggle"] = False
         i.view.map_this(button.ID, to_fx)
     
     next_cc = i.parameter_maker.next_cc
@@ -90,6 +92,7 @@ def create(i):
         # First Row Buttons: Switch To View
         it = 0
         for button, target in zip(bcr.menu_rows(0), switch_tracks):
+            view.configuration[button.ID]["toggle"] = False
             if it != track_index:
                 view.map_this(button.ID, target)
             else:
@@ -109,12 +112,12 @@ def create(i):
     for index, view in enumerate(views_fx):
         it = 0
         for button, target in zip(bcr.menu_rows(1), switch_fx):
+            view.configuration[button.ID]["toggle"] = False
             if it != index:
                 view.map_this(button.ID, target)
             else:
                 view.map_this(button.ID, to_init_view)
             it += 1
-
 
 
         for track, t_view in enumerate(views_tracks):

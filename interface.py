@@ -17,7 +17,7 @@ from collections import defaultdict as ddict
 from rtmidi.midiconstants import CONTROL_CHANGE
 
 from targets import get_target, Parameter, SwitchView
-from devices import Device, BCR2k, MidiLoop, Listener, DeviceEvent
+from devices import Device, BCR2k, VirtualMidi, Listener, DeviceEvent
 from modifiers import get_modifier
 from threadshell import Shell, yield_thread 
 
@@ -213,7 +213,6 @@ class Interface(Listener):
             m = v["map"]
             for ID, targets in view.map.items():
                 for target in targets:
-#                    print(target)
                     m.append(target.serialize(ID))
             p["views"].append(v)
 
@@ -313,10 +312,10 @@ class Interface(Listener):
             except KeyError:
                 pass
 
-        print("[%s] Switched to %s" % (self, view))
         new_view = self.add_view(view)
 
         self.reflect_all_on_input()
+        print("[%s] Switched to %s" % (self, view))
 
         for o in self.observers:
             o.callback_view(self.view, new_view)
@@ -635,7 +634,7 @@ if __name__ == "__main__":
   
 
     bcr = BCR2k(auto_start=False)
-    loop = MidiLoop(auto_start=False)
+    loop = VirtualMidi(auto_start=False)
     print("Devices started")
 
     interface = Interface(bcr, loop)

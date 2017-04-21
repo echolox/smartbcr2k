@@ -1,6 +1,6 @@
 import argparse
 import importlib
-from interface import Interface, BCR2k, MidiLoop, save_profile
+from interface import Interface, BCR2k, VirtualMidi, save_profile
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create a profile from a script.')
@@ -15,7 +15,7 @@ if __name__ == "__main__":
         outfilename = "%s.bcr" % args.script
 
     bcr = BCR2k(auto_start=False)
-    loop = MidiLoop(auto_start=False)
+    loop = VirtualMidi(auto_start=False)
     
     interface = Interface(bcr, loop)
 

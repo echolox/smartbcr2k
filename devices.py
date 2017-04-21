@@ -1,5 +1,6 @@
 import time
 import rtmidi
+import traceback
 from queue import Queue, Empty, Full
 from threading import Thread
 from enum import Enum
@@ -410,13 +411,18 @@ class OutputEvent(Enum):
     CC = 1
 
 
-class MidiLoop(OutputPort):
+class VirtualMidi(OutputPort):
 
     def __init__(self, *args, **kwargs):
         self.input,  self.inname  = open_midiinput (DEFAULT_LOOP_IN)
         self.output, self.outname = open_midioutput(DEFAULT_LOOP_OUT)
-        super().__init__("MidiLoop", *args, **kwargs)
+        super().__init__("VirtualMidi", *args, **kwargs)
 
+        self.ignore_daw = kwargs.get("ignore_daw", False)
+            
+    def input_callback(self, event):
+        if not self.ignore_daw:
+            super().input_callback(event)
 
 
 if __name__ == "__main__":

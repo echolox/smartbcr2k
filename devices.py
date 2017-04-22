@@ -34,20 +34,21 @@ class DeviceEvent(Enum):
     CC = 1
 
 
-def ccc2ID(channel, cc, device_number=0):
+def ccc2ID(channel, cc, page=0, device_number=0):
     """
     Turns a combination of channel and cc into a Control ID.
 
     The ID is nothing more than an enumeration of all possible
     channel + cc combinations
     """
-    return (channel - 1) * 128 + cc + device_number * 128 * 16
+    return ((channel - 1) * 128 + cc + device_number * 128 * 16) + (page * 128 * 16)
 
 def ID2ccc(ID, device_number=0):
     """
     Turns a control ID into a combination of channel + cc.
     """
     ID -= device_number * 128 * 16
+    ID %= 128 * 16
     return (ID // 128) + 1, ID % 128
 
 
@@ -69,6 +70,8 @@ class Device(ControlParent):
             self.input,  self.inname  = open_midiinput (select_port("input"))
 
         self.controls = {}
+
+        self._page = 0
 
         self.blink_state = 0
         self.last_blink = time.time()
@@ -112,6 +115,21 @@ class Device(ControlParent):
         channel, cc = ID2ccc(ID)
         channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])
+
+    @property
+    def page(self):
+        return self._page
+
+    @page.setter
+    def page(self, p):
+        """
+        Any value than what equates to a True sets it to 1, else 0
+        """
+        self._page = 1 if p else 0
+        self.page_flip()
+
+    def page_flip(self):
+        pass
 
     def start(self):
         """
@@ -212,7 +230,11 @@ class Device(ControlParent):
         message, deltatime = event
         channel_byte, cc, value = message
         channel = (channel_byte - CONTROL_CHANGE) + 1
-        ID = ccc2ID(channel, cc)
+        ID = ccc2ID(channel, cc, self.page)
+        # @TODO: More robust way of handling controls that only exist
+        #        on one page.
+        if ID not in self.controls:
+            ID = ccc2ID(channel, cc, page=0)
         self.set_control(ID, value, from_input=True, inform_observers=True)
 
     def control_changed(self, ID, value):
@@ -256,11 +278,14 @@ class BCR2k(Device):
         ID, self.macros = make_controls(ID, 32, Dial)
         ID, self.macro_buttons = make_controls(ID, 32, Button, toggle=False)
         ID, self.menu_buttons = make_controls(ID, 16, Button, toggle=True)
+
+        ID2 = ID + 16 * 128
         ID, self.dials = make_controls(ID, 24, Dial)
-        ID, self.command_buttons = make_controls(ID, 4, Button, toggle=False)
+        _,  page2_dials = make_controls(ID2, 24, Dial)
+        self.dials.extend(page2_dials)
 
         self.dialsc = [[] for _ in range(8)]
-        self.dialsr = [[] for _ in range(3)]
+        self.dialsr = [[] for _ in range(6)]
         row = 0
         column = 0
         for dial in self.dials:
@@ -272,6 +297,8 @@ class BCR2k(Device):
                 column = 0
                 row += 1
 
+        ID, self.command_buttons = make_controls(ID, 4, Button, toggle=False)
+
     def macro_bank(self, bank):
         return self.macros[bank * 8: bank * 8 + 8]
 
@@ -280,6 +307,11 @@ class BCR2k(Device):
 
     def menu_rows(self, row):
         return self.menu_buttons[row * 8: row * 8 + 8]
+
+    def page_flip(self):
+        p = self.page
+        for dial in self.dials[p*24:p*24 + 24]:
+            self.send_to_device(dial.ID, dial.get_value())
 
 class Listener(object):
     """

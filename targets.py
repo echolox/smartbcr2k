@@ -1,6 +1,6 @@
 from collections import defaultdict as ddict
 
-from util import FULL, clip, unify
+from util import FULL, clip, unify, dprint
 
 class Target(object):
     """
@@ -22,6 +22,7 @@ class Target(object):
         called from the parent, we rely on it to do what it needs to do
         to react to the Target's trigger.
         """
+        dprint(self.name, value)
         if sender not in (self.parent.input, self.parent.output):
             self.parent.target_triggered(self, value, sender)
 

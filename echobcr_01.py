@@ -80,7 +80,7 @@ def create(i):
         fx_params = []
         fx_index = 1
         subparam_index = 0
-        for channel, cc in [next(gen) for _ in range(24)]:
+        for channel, cc in [next(gen) for _ in range(48)]:
             p = Parameter("T%i_FX%i_%i" % (track_index + 1, fx_index, subparam_index + 1),
                           i, channel, cc)
             fx_params.append(p)

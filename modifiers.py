@@ -1,11 +1,11 @@
-from collections import defaultdict as ddict
-
+from inspect import isclass
 from math import sin
+from collections import defaultdict as ddict
 
 from targets import ValueTarget
 from devices import clip
 
-from util import FULL, eprint
+from util import FULL, eprint, dprint, iprint
 
 MIN_MOD = 0
 MAX_MOD = 127
@@ -20,19 +20,26 @@ class Modifier(object):
     """
 
     def __init__(self, amplitude=MAX_MOD):
-        self._amplitude = amplitude
-        self._value = 0
+        self._amplitude = amplitude  # The maximum value the Modifier will take on
+        self._value = 0              # The actual current value of the Modifier at any given time
 
         self.targets = ddict(lambda: 0.0)  # target object -> [-1, 1]
     
     def serialize(self):
+        """
+        Returns a dict with key value pairs for all attributes that should be set upon recreation.
+        """
         m = {"amplitude": self._amplitude,
              "type": type(self).__name__,
             }
         m["targets"] = {t.name: power for t, power in self.targets.items()}
         return m
 
-    def from_dict(self, m, all_targets, *args, **kwargs):
+    def from_dict(self, m, all_targets):
+        """
+        Resets the objects attributes based on the dictionary and hooks the Modifier up to
+        all targets provided in the list all_targets.
+        """
         self._amplitude = m["amplitude"]
         for target_name, power in m["targets"].items():
             try:
@@ -44,7 +51,8 @@ class Modifier(object):
 
     def target(self, target, power=1.0):
         """
-        Expects a target object and a power in the range [-1, 1]
+        Expects a target object and a power in the range [-1, 1]. The Modifier will then
+        start modifying that target.
         """
         if float(power) == 0.0:
             try:
@@ -56,7 +64,7 @@ class Modifier(object):
 
     def remove_target(self, target):
         """
-        Stop modifying the provided target
+        Stop modifying the provided target.
         """
         self.target(target, 0.0)
         try:
@@ -68,7 +76,7 @@ class Modifier(object):
         """
         Removes all targets from this modifier
         """
-        for target in targets:
+        for target in self.targets:
             self.remove_target(target)
 
         # Better safe than sorry
@@ -76,9 +84,6 @@ class Modifier(object):
 
     @property
     def amplitude(self):
-        """
-        Returns the amplitude, which is the maximum value Modifier.value could have
-        """
         return self._amplitude
 
     @amplitude.setter
@@ -91,7 +96,7 @@ class Modifier(object):
 
     def modvalue(self):
         """
-        Returns the current value multiplied by the amplitude
+        Returns the current value multiplied by the amplitude. Use this to modify things.
         """
         return self.value * self.amplitude 
 
@@ -110,6 +115,10 @@ class Modifier(object):
         return modvalue
 
     def calculate(self, t):
+        """
+        Override with your own formula that calculates a new modifier value based on
+        the current time t.
+        """
         raise NotImplementedError
 
     def __repr__(self):
@@ -121,7 +130,7 @@ class Modifier(object):
 
 class LFOSine(Modifier):
     """
-    A positive sine, moving from 0 to 1*amplitude
+    A positive sine, moving from 0 to 1 * amplitude
     """
     
     def __init__(self, frequency=0.2, **kwargs):
@@ -141,10 +150,13 @@ class LFOSine(Modifier):
         return (sin(t * self.frequency) + 1) * 0.5
 
 
-from inspect import isclass
+# Create a catalogue of modifiers to fetch Classes by name
 MODIFIERS = {C.__name__: C for C in globals().values() if isclass(C) and issubclass(C, Modifier)}
 
 def get_modifier(name):
+    """
+    Retrieves the Modifier class by name. Raises KeyError if the Modifier does not exist.
+    """
     return MODIFIERS[name]
 
 if __name__ == '__main__':

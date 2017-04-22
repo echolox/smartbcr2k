@@ -1,6 +1,6 @@
 from modifiers import LFOSine
 from interface import View
-from targets import Parameter, SwitchView
+from targets import Parameter, SwitchView, PageFlip
 from util import flatten
 
 def create(i):
@@ -10,6 +10,10 @@ def create(i):
     ## Dials: Parameters
     ## Buttons: Not used
     macros = bcr.macros
+    init_view = i.view
+
+    global_pageflip = PageFlip("Global Pageflip", i, bcr)
+    pageflip_button = bcr.command_buttons[2]
 
     # 1: Empty for now. Later: Dynamic Targets
     for macro in bcr.macro_bank(0):
@@ -32,8 +36,11 @@ def create(i):
     for dial in bcr.dials:
         i.quick_parameter(dial.ID)
         
-    for command in bcr.command_buttons:
-        i.quick_parameter(command.ID)
+#    for command in bcr.command_buttons:
+#        i.quick_parameter(command.ID)
+    
+    i.view.map_this(pageflip_button.ID, global_pageflip)
+    i.view.configuration[pageflip_button.ID]["toggle"] = True
 
     ### MENU BUTTONS ###
     ## Top Row: Switch to View of that Track
@@ -68,6 +75,10 @@ def create(i):
     dials = flatten(bcr.dialsc)
     for track_index in range(8):
         view = views_tracks[track_index]
+
+        # TODO:
+        # - Set Macros
+        # - Set command buttons
 
         fx_onoff = []
         it = 1
@@ -108,7 +119,14 @@ def create(i):
         for dial, target in zip(dials, fx_params):
             view.map_this(dial.ID, target)
         
+        # Command Buttons:
+        view.map_this(pageflip_button.ID, global_pageflip)
+        view.configuration[pageflip_button.ID]["toggle"] = True
+
         i.views.append(view) 
+        
+
+    # END PER TRACK VIEW
 
     for index, view in enumerate(views_fx):
         it = 0
@@ -129,6 +147,10 @@ def create(i):
             view.map_this(bcr.menu_rows(0)[track].ID, onoff)
             for subparam, p in enumerate(params):
                 view.map_this(bcr.dialsc[track][subparam].ID, p)
+
+        # Command Buttons:
+        view.map_this(pageflip_button.ID, global_pageflip)
+        view.configuration[pageflip_button.ID]["toggle"] = True
 
         i.views.append(view)
 

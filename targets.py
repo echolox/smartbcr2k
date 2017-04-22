@@ -22,7 +22,6 @@ class Target(object):
         called from the parent, we rely on it to do what it needs to do
         to react to the Target's trigger.
         """
-        dprint(self.name, value)
         if sender not in (self.parent.input, self.parent.output):
             self.parent.target_triggered(self, value, sender)
 
@@ -47,6 +46,34 @@ class Target(object):
 
     def __str__(self):
         return self.__repr__()
+
+
+class PageFlip(Target):
+    """
+    Issues the command to pageflip on a device.
+    """
+
+    def __init__(self, name, parent, device, **kwargs):
+        super().__init__(name, parent, **kwargs)
+        self.device = device
+
+    def trigger(self, sender, value=None):
+        super().trigger(sender, value)
+        self.device.page = 1 if value >= 64 else 0
+
+    def serialize(self, *args, **kwargs):
+        s = super().serialize(*args, **kwargs) 
+        s["device"] = self.device.name
+        return s
+
+    def from_dict(self, d):
+        super().from_dict(d)
+        self.device = self.parent.get_device(d["device"])
+
+    @classmethod
+    def blank(self, parent):
+        return PageFlip("unnamed", parent, parent.input)
+
 
 class SwitchView(Target):
     """

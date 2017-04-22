@@ -183,6 +183,14 @@ class Interface(Listener):
         if auto_start:
             self.start()
 
+    def get_device(self, name):
+        if self.input.name == name:
+            return self.input
+        elif self.output.name == name:
+            return self.output
+        else:
+            return None
+
     def reset_recent_changes(self):
         self.recent_changes = {
             "controls": {},

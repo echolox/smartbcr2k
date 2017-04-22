@@ -126,9 +126,13 @@ class Device(ControlParent):
         Any value than what equates to a True sets it to 1, else 0
         """
         self._page = 1 if p else 0
-        self.page_flip()
+        self.page_update()
 
-    def page_flip(self):
+    def pageflip(self):
+        self._page = 1 if self._page == 0 else 0
+        self.page_update()
+
+    def page_update(self):
         pass
 
     def start(self):
@@ -308,7 +312,7 @@ class BCR2k(Device):
     def menu_rows(self, row):
         return self.menu_buttons[row * 8: row * 8 + 8]
 
-    def page_flip(self):
+    def page_update(self):
         p = self.page
         for dial in self.dials[p*24:p*24 + 24]:
             self.send_to_device(dial.ID, dial.get_value())

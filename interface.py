@@ -18,7 +18,7 @@ from collections import defaultdict as ddict
 from rtmidi.midiconstants import CONTROL_CHANGE
 
 from targets import get_target, Parameter, SwitchView
-from devices import Device, BCR2k, VirtualMidi, Listener, DeviceEvent
+from devices import Device, BCR2k, VirtualMidi, DeviceEvent
 from modifiers import get_modifier
 from threadshell import Shell, yield_thread 
 
@@ -135,7 +135,7 @@ class View(object):
         return self.__repr__()
 
 
-class Interface(Listener):
+class Interface(object):
     """
     The Interface connects an input device with an output device by tunneling
     transmitted values from the input through its currently triggerive View.

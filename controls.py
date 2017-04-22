@@ -47,8 +47,7 @@ class Control(object):
     def get_value(self):
         return self._value
 
-    # @RENAME: set_value
-    def value(self, value):
+    def set_value(self, value):
         """
         Try to set the control to the provided value. Due to the configuration of the
         Control it might assume a different value. The assumed value is returned to
@@ -126,7 +125,7 @@ class Button(Control):
             else:
                 self.on()
 
-    def value(self, value):
+    def set_value(self, value):
         """
         React to value changes on the hardware. If the button configured
         to toggle, we need to reflect that on the hardware where every
@@ -141,7 +140,6 @@ class Button(Control):
             self.ignore -= 1
             self.parent.send_to_device(self.ID, self._value)
             return None
-
 
         if self.toggle:
             if value == self.maxval and not self.state:

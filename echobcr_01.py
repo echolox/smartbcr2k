@@ -74,7 +74,6 @@ def create(i):
         for channel, cc in [next(gen)] * 8:
             p = Parameter("T%i_FX%i_OnOff" % (track_index + 1, it),
                           i, channel, cc, is_button=True) 
-            print(p)
             fx_onoff.append(p)
             it += 1
 
@@ -97,7 +96,9 @@ def create(i):
                 view.map_this(button.ID, target)
             else:
                 view.map_this(button.ID, to_init_view)
+                view.configuration[button.ID]["blink"] = True
             it += 1
+
 
         # Second Row Buttons: FX On Off
         for button, target in zip(bcr.menu_rows(1), fx_onoff):
@@ -117,6 +118,7 @@ def create(i):
                 view.map_this(button.ID, target)
             else:
                 view.map_this(button.ID, to_init_view)
+                view.configuration[button.ID]["blink"] = True
             it += 1
 
 

@@ -20,7 +20,11 @@ class ControlParent(object):
 
 class Control(object):
 
-    configurable = []
+    configurable = ["minval", "maxval", "blink"]
+    default_conf = {"minval": 0, 
+                    "maxval": 127,
+                    "blink": False,
+                   }
 
     def __init__(self, ID, parent=None, minval=0, maxval=127, blink=False):
         self.ID = ID
@@ -50,7 +54,6 @@ class Control(object):
 #        self.parent.send_to_device(self.ID, self._value)
 
     def configure(self, conf):
-        assert(list(conf.keys()) == self.configurable)
         for k, v in conf.items():
             setattr(self, k, v)
 
@@ -60,10 +63,14 @@ class Control(object):
     def __str__(self):
         return self.__repr__()
 
+buttonconf = Control.default_conf
+buttonconf.update({"toggle": True})
 
 class Button(Control):
 
-    configurable = ["toggle"]
+    # @TODO: This is hacky, make it more straightforward
+    configurable = Control.configurable + ["toggle"]
+    default_conf = buttonconf
     
     def __init__(self, ID, parent=None, toggle=True, **kwargs):
         super().__init__(ID, parent, **kwargs)

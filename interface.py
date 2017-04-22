@@ -1,3 +1,4 @@
+from copy import copy
 import time
 import rtmidi
 import json
@@ -89,15 +90,10 @@ class View(object):
         # - Buttons: toggle vs momentary
         self.configuration = {}
         for ID, control in device.controls.items():
-            conf = {}
-            for attr in control.configurable:
-                conf[attr] = getattr(control, attr)
-            self.configuration[ID] = conf
-
+            self.configuration[ID] = copy(control.default_conf)
 
         # Map IDs of a device's controls to Targets
         self.map = ddict(list)
-
 
     def find_IDs_by_target(self, vtarget):
         """

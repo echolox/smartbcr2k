@@ -27,3 +27,7 @@ DEBUG_PRINT = True
 def dprint(*args, **kwargs):
     if DEBUG_PRINT:
         print(*args, **kwargs)
+
+def iprint(condition, *args, **kwargs):
+    if condition:
+        print(*args, **kwargs)

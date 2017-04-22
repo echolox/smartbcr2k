@@ -53,6 +53,8 @@ class SwitchView(Target):
     when triggered.
     """
 
+    trigger_vals = [127]
+
     def __init__(self, name, parent, view, **kwargs):
         super().__init__(name, parent, **kwargs)
         if type(view) == str:
@@ -60,11 +62,10 @@ class SwitchView(Target):
         else:
             self.view_name = view.name
         # @TODO: Class member override?
-        self.trigger_vals = [127]
 
     def trigger(self, sender, value=None):
-        self.parent.switch_to_view(self.view_name)
         super().trigger(sender, value)
+        self.parent.switch_to_view(self.view_name)
 
     def serialize(self, *args, **kwargs):
         s = super(SwitchView, self).serialize(*args, **kwargs) 

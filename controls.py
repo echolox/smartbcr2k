@@ -1,4 +1,4 @@
-from util import FULL, clip
+from util import FULL, clip, dprint, iprint
 
 class ControlParent(object):
     
@@ -22,12 +22,17 @@ class Control(object):
 
     configurable = []
 
-    def __init__(self, ID, parent=None, minval=0, maxval=127):
+    def __init__(self, ID, parent=None, minval=0, maxval=127, blink=False):
         self.ID = ID
         self.parent = parent
         self.minval = minval
         self.maxval = maxval
+        self.blink = blink
         self._value = 0
+
+    def unblink(self):
+        self.blink = False
+        self.parent.send_to_device(self.ID, 0)
 
     def get_value(self):
         return self._value
@@ -71,7 +76,8 @@ class Button(Control):
     def on(self):
         self._value = self.maxval
         self.state = True
-        self.ignore = 1
+        if self.toggle:
+            self.ignore = 1
         self.parent.send_to_device(self.ID, self._value)
         self.parent.control_changed(self.ID, self.state)
 

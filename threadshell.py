@@ -86,6 +86,8 @@ class Shell(object):
                 while max_calls > 0:  # ... till a max is reached ...
                     call, result, args, kwargs = self._q.get_nowait()
                     max_calls -= 1
+                    if args == (844, 127):
+                        dprint("(%s): %s, %s" % (self._o, call, args))
                     result.put(call(*args, **kwargs))
             except Empty:
                 # ... or until nothing's left

@@ -9,7 +9,7 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
 from controls import *
-from util import FULL, clip, eprint, dprint
+from util import FULL, clip, eprint, dprint, iprint
 
 from threadshell import Shell, yield_thread
 
@@ -70,7 +70,6 @@ class Device(ControlParent):
 
         self.controls = {}
 
-        self.blinken = []
         self.blink_state = 0
         self.last_blink = time.time()
 
@@ -139,10 +138,8 @@ class Device(ControlParent):
         # Blinking routine
         if (t - self.last_blink) > 0.5:
             self.blink_state = 1 if self.blink_state==0 else 0 
-            for blink in self.blinken:
-                # @Feature: Instead of hardcoded FULL, use known value
-                #           to make this compatible with encoders
-                self.send(blink, self.blink_state * self.controls[blink].maxval)
+            for control in filter(lambda c: c.blink, self.controls.values()):
+                self.send_to_device(control.ID, self.blink_state * control.maxval)
             self.last_blink = t
 
     def get_control(self, ID):
@@ -195,7 +192,7 @@ class Device(ControlParent):
         # If the cc didn't come from the hardware, or if it did but the
         # real_value is different that what we tried to set the virtual
         # control to, send that cc to the input
-#        if not sender == self.input or real_value != value:
+
         if not from_input or real_value != value:
             self.send_to_device(ID, real_value)
 
@@ -369,7 +366,6 @@ class OutputPort(object):
         self.last_sent_values[ID] = value
         channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])
-        print(channel, cc, value)
 
     def input_callback(self, event):
         """

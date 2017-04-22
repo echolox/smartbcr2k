@@ -21,7 +21,7 @@ from devices import Device, BCR2k, VirtualMidi, Listener, DeviceEvent
 from modifiers import get_modifier
 from threadshell import Shell, yield_thread 
 
-from util import keys_to_ints, unify, eprint, dprint
+from util import keys_to_ints, unify, eprint, iprint
 
 
 class Exhausted(Exception):
@@ -388,11 +388,13 @@ class Interface(Listener):
             return
 
         for target in targets:
-            # Some targets should not be triggered on an Off, False, 0 value
+            # Some targets should only trigger on certain values
+            # TODO: Move this into the target.trigger method?
             if unify(value) in target.trigger_vals:
                 real_value = target.trigger(sender, value)
-                if value != real_value:
-                    self._set_control(ID, value)
+
+                if real_value is not None and value != real_value:
+                    self._set_control(ID, real_value)
                 else:
                     self.recent_changes["controls"][ID] = real_value
                 self.reflect_target_on_input(target, exclude_IDs=[ID])
@@ -644,7 +646,11 @@ if __name__ == "__main__":
 
 
     try:
+        b = bcr.controls[844]
         while True:
-            pass
+            import code
+            code.interact(local=locals())
     except KeyboardInterrupt:
         pass
+
+    exit()

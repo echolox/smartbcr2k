@@ -215,8 +215,9 @@ class Device(ControlParent):
         # real_value is different that what we tried to set the virtual
         # control to, send that cc to the input
 
-        if not from_input or real_value != value:
-            self.send_to_device(ID, real_value)
+        if self.control_on_active_page(control):
+            if not from_input or real_value != value:
+                self.send_to_device(ID, real_value)
 
         # If it came from the input device or the value we tried to set is
         # different than what the virutal control assumed, issue the cc
@@ -226,6 +227,10 @@ class Device(ControlParent):
 
         return real_value
 
+    def control_on_active_page(self, control):
+        return control.ID in range(self.page * 16 * 128, (self.page + 1) * 16 * 128)
+
+        
 
     def input_callback(self, event):
         """

@@ -16,20 +16,21 @@ def create(i):
     pageflip_button = bcr.command_buttons[2]
 
     # 1: Empty for now. Later: Dynamic Targets
+    macro_targets = []
     for macro in bcr.macro_bank(0):
-        i.quick_parameter(macro.ID)
+        macro_targets.append(i.quick_parameter(macro.ID))
 
     # 2: Parameters (Patch selection)
     for macro in bcr.macro_bank(1):
-        i.quick_parameter(macro.ID)
+        macro_targets.append(i.quick_parameter(macro.ID))
 
     # 3: Parameters (Reverb Send)
     for macro in bcr.macro_bank(2):
-        i.quick_parameter(macro.ID)
+        macro_targets.append(i.quick_parameter(macro.ID))
 
     # 4: Parameters (Delay Send)
     for macro in bcr.macro_bank(3):
-        i.quick_parameter(macro.ID)
+        macro_targets.append(i.quick_parameter(macro.ID))
 
     # MAIN VIEW BUTTONS AND DIALS
 
@@ -76,9 +77,8 @@ def create(i):
     for track_index in range(8):
         view = views_tracks[track_index]
 
-        # TODO:
-        # - Set Macros
-        # - Set command buttons
+        for dial, target in zip(bcr.macros, macro_targets):
+            view.map_this(dial.ID, target)
 
         fx_onoff = []
         it = 1
@@ -129,6 +129,9 @@ def create(i):
     # END PER TRACK VIEW
 
     for index, view in enumerate(views_fx):
+        for dial, target in zip(bcr.macros, macro_targets):
+            view.map_this(dial.ID, target)
+
         it = 0
         for button, target in zip(bcr.menu_rows(1), switch_fx):
             view.configuration[button.ID]["toggle"] = False

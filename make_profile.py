@@ -19,8 +19,6 @@ if __name__ == "__main__":
     
     interface = Interface(bcr, loop)
 
-    print(args)
-
     module = importlib.import_module(args.script)
     module.create(interface)
     save_profile(interface, outfilename)

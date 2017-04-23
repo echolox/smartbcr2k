@@ -22,6 +22,7 @@ init(autoreset=True)
 
 from util import keys_to_ints, unify, eprint, iprint
 from util.threadshell import Shell, yield_thread 
+from util.interactive import interact
 
 from targets import get_target, Parameter, SwitchView, ValueTarget
 from devices import DeviceEvent, BCR2k, VirtualMidi
@@ -633,7 +634,6 @@ def load_profile(interface, filename):
         if "comment" in profile:
             for k, v in profile["comment"].items():
                 print(Fore.YELLOW + Style.BRIGHT + "%s: %s" % (k, v))
-        print("Loaded profile", filename)
 
 
 def save_profile(interface, filename, comment=None):
@@ -664,12 +664,7 @@ if __name__ == "__main__":
 
     try:
         if args.interactive:
-            def attributes(obj):
-                for attr in obj.__dict__.keys():
-                    print("- %s" % attr)
-
-            import code
-            code.interact(local=locals(), banner=Fore.BLUE + Style.BRIGHT + """
+            interact(local=locals(), banner="""
     The Interface is now running and you've been dropped into Python's
     interactive console. The following objects are available:
 

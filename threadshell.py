@@ -96,7 +96,10 @@ class Shell(object):
             # Run the update function from the encapsulated object
             # setting a maximum on calls above assures the update
             # function won't starve
-            self._u()
+            try:
+                self._u()
+            except Exception as e:
+                eprint(e)
 
             # Yield thread time
             yield_thread()

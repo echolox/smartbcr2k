@@ -38,6 +38,10 @@ class ParameterMaker(object):
     Produces Targets of the type Parameter. Everytime a new target is
     requested it assigns that target the next available CC.
     """
+
+    # These CC values could cause problems when mapped to
+    forbidden = [123]
+
     def __init__(self, interface, channel, prefix="CC", first_cc=1, expand=True):
         self.interface = interface
         self.channel = channel
@@ -53,7 +57,11 @@ class ParameterMaker(object):
 
         name = "%s_%i" % (self.prefix, self.next_cc)
         t = Parameter(name, self.interface, self.channel, self.next_cc, is_button=is_button)        
-        self.next_cc += 1
+        while True:
+            self.next_cc += 1
+            if self.next_cc not in self.forbidden:
+                break
+
         if self.next_cc > 128:
             if self.expand and self.channel < 16:
                 self.next_cc = 1
@@ -524,7 +532,10 @@ class Interface(object):
 
     def main_loop(self):
         while True:
-            self.update()
+            try:
+                self.update()
+            except Exception as e:
+                eprint(e)
             yield_thread()
 
     def update(self):

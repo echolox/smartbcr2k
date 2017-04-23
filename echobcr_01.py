@@ -67,7 +67,11 @@ def create(i):
         while channel <= 16:
             yield channel, cc
 
-            cc = (cc + 1) % 128
+            while True:
+                cc = (cc + 1) % 128
+                if cc not in i.parameter_maker.forbidden:
+                    break
+
             if cc == 0:  # We wrapped around
                 channel += 1
 
@@ -97,7 +101,6 @@ def create(i):
                           i, channel, cc)
             fx_params.append(p)
             subparam_index = (subparam_index + 1) % 3
-            iprint(cc == 123, p)
             if subparam_index == 0:
                 fx_index += 1
 

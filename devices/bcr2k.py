@@ -91,7 +91,7 @@ class BCR2k(Device):
         """
         Analog to macro_bank but for its buttons.
         """
-        return self.macros_buttons[bank * 8: bank * 8 + 8]
+        return self.macro_buttons[bank * 8: bank * 8 + 8]
 
     def menu_rows(self, row):
         """

@@ -1,6 +1,6 @@
 from modifiers import LFOSine
 from interface import View
-from targets import Parameter, SwitchView, PageFlip
+from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter
 from util import flatten, iprint
 
 def create(i):
@@ -15,10 +15,21 @@ def create(i):
     global_pageflip = PageFlip("Global Pageflip", i, bcr)
     pageflip_button = bcr.command_buttons[2]
 
-    # 1: Empty for now. Later: Dynamic Targets
-    macro_targets = []
-    for macro in bcr.macro_bank(0):
-        macro_targets.append(i.quick_parameter(macro.ID))
+    # 1: Flex Targets
+    macro_targets = [FlexParameter("Flex_%i" % (it + 1), i) for it in range(8)]
+    for macro, target in zip(bcr.macro_bank(0), macro_targets):
+        init_view.map_this(macro.ID, target)
+
+    macro_setters = [FlexSetter("FlexSetter_%i" % (it + 1), i, flex)
+                                for it, flex in enumerate(macro_targets)]
+    for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
+        init_view.map_this(mbutton.ID, target)
+
+    # Need 8 parameters to keep offset because I'm too lazy to remap in Ableton
+    # We map to ID 0 because that is unused
+    i.parameter_maker.skip(8)
+#    for _ in range(8):
+        #discard = i.quick_parameter(0)
 
     # 2: Parameters (Patch selection)
     for macro in bcr.macro_bank(1):

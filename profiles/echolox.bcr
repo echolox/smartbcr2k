@@ -805,75 +805,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -1092,13 +1060,52 @@
           "value": 0
         },
         {
-          "ID": 859,
-          "cc": 43,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_43",
-          "type": "Parameter",
-          "value": 0
+          "ID": 801,
+          "flex": "Flex_1",
+          "name": "FlexSetter_1",
+          "type": "FlexSetter"
+        },
+        {
+          "ID": 802,
+          "flex": "Flex_2",
+          "name": "FlexSetter_2",
+          "type": "FlexSetter"
+        },
+        {
+          "ID": 803,
+          "flex": "Flex_3",
+          "name": "FlexSetter_3",
+          "type": "FlexSetter"
+        },
+        {
+          "ID": 804,
+          "flex": "Flex_4",
+          "name": "FlexSetter_4",
+          "type": "FlexSetter"
+        },
+        {
+          "ID": 805,
+          "flex": "Flex_5",
+          "name": "FlexSetter_5",
+          "type": "FlexSetter"
+        },
+        {
+          "ID": 806,
+          "flex": "Flex_6",
+          "name": "FlexSetter_6",
+          "type": "FlexSetter"
+        },
+        {
+          "ID": 807,
+          "flex": "Flex_7",
+          "name": "FlexSetter_7",
+          "type": "FlexSetter"
+        },
+        {
+          "ID": 808,
+          "flex": "Flex_8",
+          "name": "FlexSetter_8",
+          "type": "FlexSetter"
         },
         {
           "ID": 860,
@@ -1119,11 +1126,11 @@
           "value": 0
         },
         {
-          "ID": 862,
-          "cc": 46,
+          "ID": 2910,
+          "cc": 70,
           "channel": 1,
           "is_button": false,
-          "name": "CC_46",
+          "name": "CC_70",
           "type": "Parameter",
           "value": 0
         },
@@ -1359,11 +1366,11 @@
           "value": 0
         },
         {
-          "ID": 2910,
-          "cc": 70,
+          "ID": 862,
+          "cc": 46,
           "channel": 1,
           "is_button": false,
-          "name": "CC_70",
+          "name": "CC_46",
           "type": "Parameter",
           "value": 0
         },
@@ -1431,11 +1438,11 @@
           "value": 0
         },
         {
-          "ID": 2918,
-          "cc": 78,
+          "ID": 870,
+          "cc": 54,
           "channel": 1,
           "is_button": false,
-          "name": "CC_78",
+          "name": "CC_54",
           "type": "Parameter",
           "value": 0
         },
@@ -1458,19 +1465,13 @@
           "value": 0
         },
         {
-          "ID": 870,
-          "cc": 54,
+          "ID": 2919,
+          "cc": 79,
           "channel": 1,
           "is_button": false,
-          "name": "CC_54",
+          "name": "CC_79",
           "type": "Parameter",
           "value": 0
-        },
-        {
-          "ID": 875,
-          "device": "BCR2k",
-          "name": "Global Pageflip",
-          "type": "PageFlip"
         },
         {
           "ID": 856,
@@ -1491,15 +1492,6 @@
           "value": 0
         },
         {
-          "ID": 2919,
-          "cc": 79,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_79",
-          "type": "Parameter",
-          "value": 0
-        },
-        {
           "ID": 2902,
           "cc": 62,
           "channel": 1,
@@ -1507,6 +1499,12 @@
           "name": "CC_62",
           "type": "Parameter",
           "value": 0
+        },
+        {
+          "ID": 875,
+          "device": "BCR2k",
+          "name": "Global Pageflip",
+          "type": "PageFlip"
         },
         {
           "ID": 833,
@@ -1537,6 +1535,24 @@
           "name": "To_T7",
           "type": "SwitchView",
           "view": "Track_7"
+        },
+        {
+          "ID": 2918,
+          "cc": 78,
+          "channel": 1,
+          "is_button": false,
+          "name": "CC_78",
+          "type": "Parameter",
+          "value": 0
+        },
+        {
+          "ID": 859,
+          "cc": 43,
+          "channel": 1,
+          "is_button": false,
+          "name": "CC_43",
+          "type": "Parameter",
+          "value": 0
         },
         {
           "ID": 845,
@@ -2426,75 +2442,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -4071,75 +4055,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -5716,75 +5668,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -7361,75 +7281,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -9006,75 +8894,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -10651,75 +10507,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -12296,75 +12120,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -13941,75 +13733,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -15586,75 +15346,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -17231,75 +16959,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -18876,75 +18572,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -20521,75 +20185,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -22166,75 +21798,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -23811,75 +23411,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -25456,75 +25024,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,
@@ -27101,75 +26637,43 @@
       "map": [
         {
           "ID": 769,
-          "cc": 1,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_1",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_1",
+          "type": "FlexParameter"
         },
         {
           "ID": 770,
-          "cc": 2,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_2",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_2",
+          "type": "FlexParameter"
         },
         {
           "ID": 771,
-          "cc": 3,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_3",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_3",
+          "type": "FlexParameter"
         },
         {
           "ID": 772,
-          "cc": 4,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_4",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_4",
+          "type": "FlexParameter"
         },
         {
           "ID": 773,
-          "cc": 5,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_5",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_5",
+          "type": "FlexParameter"
         },
         {
           "ID": 774,
-          "cc": 6,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_6",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_6",
+          "type": "FlexParameter"
         },
         {
           "ID": 775,
-          "cc": 7,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_7",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_7",
+          "type": "FlexParameter"
         },
         {
           "ID": 776,
-          "cc": 8,
-          "channel": 1,
-          "is_button": false,
-          "name": "CC_8",
-          "type": "Parameter",
-          "value": 0
+          "name": "Flex_8",
+          "type": "FlexParameter"
         },
         {
           "ID": 777,

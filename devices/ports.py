@@ -366,6 +366,7 @@ class OutputPort(Port):
         self.last_sent_values[ID] = value
         channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])
+        print(channel, cc, value)
 
     def input_callback(self, event):
         """

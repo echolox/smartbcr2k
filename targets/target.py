@@ -41,6 +41,9 @@ class Target(object):
     def is_connected_to_output(self, ID):
         return False
 
+    def is_connected_to(self, target):
+        return False
+
     def __repr__(self):
         return self.name
 

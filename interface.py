@@ -52,6 +52,12 @@ class ParameterMaker(object):
 
         name = "%s_%i" % (self.prefix, self.next_cc)
         t = Parameter(name, self.interface, self.channel, self.next_cc, is_button=is_button)        
+
+        self.advance()
+
+        return t
+
+    def advance(self):
         while True:
             self.next_cc += 1
             if self.next_cc not in self.forbidden:
@@ -63,7 +69,13 @@ class ParameterMaker(object):
                 self.channel += 1
             else:
                 self.exhausted = True
-        return t
+
+    def skip(self, n):
+        """
+        Skips n cc values
+        """
+        for _ in range(n):
+            self.advance()
 
 
 class ViewMaker(object):
@@ -111,7 +123,7 @@ class View(object):
         IDs = []
         for ID, vtargets in self.map.items():
             for target in vtargets:
-                if target == vtarget:
+                if target == vtarget or target.is_connected_to(vtarget):
                     IDs.append(ID)
         return IDs
 
@@ -425,6 +437,8 @@ class Interface(object):
         if modified_targets:
             self.last_modified_targets = modified_targets
 
+
+
     def from_output(self, sender, channel, cc, value):
         """
         Callback method whenever the ouput produces a control change.
@@ -458,7 +472,7 @@ class Interface(object):
         if such an action was part of the Target's trigger method.
         """
         assert(sender not in (self.input, self.output))
-        if value:
+        if value is not None:
             for ID in self.view.find_IDs_by_target(target):
                 self._set_control(ID, target.value)
 
@@ -484,6 +498,9 @@ class Interface(object):
         else:
             print("Received DeviceEvent from Device other than input or output:")
             print(sender, ID, value)
+
+    def to_input(self, ID, value):
+        self.input.cc(ID, value)
 
     def to_output(self, channel, cc, value):
         """

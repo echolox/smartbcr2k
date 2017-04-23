@@ -12,6 +12,10 @@ to be called periodically, such a method can be provided in the Shell constructo
 from queue import Queue, Empty
 from time import sleep
 from threading import Thread
+
+from colorama import Back, Fore, Style, init
+init()
+
 from util import dprint
 
 TICK_RATE = 1  # in ms  # set to 0 to just yield to other threads
@@ -128,6 +132,13 @@ class Shell(object):
 
     def __eq__(self, other):
         return self._o == other
+
+    def __repr__(self):
+        color = Fore.GREEN if self._running else Fore.RED
+        return color + "Shell(%s)" % repr(self._o)
+
+    def __str__(self):
+        return self.__repr__()
 
 if __name__ == "__main__":
     class A(object):

@@ -17,6 +17,9 @@ from collections import defaultdict as ddict
 
 from rtmidi.midiconstants import CONTROL_CHANGE
 
+from colorama import Fore, Back, Style, init
+init(autoreset=True)
+
 from util import keys_to_ints, unify, eprint, iprint
 from util.threadshell import Shell, yield_thread 
 
@@ -629,7 +632,7 @@ def load_profile(interface, filename):
         interface.load_profile(profile)
         if "comment" in profile:
             for k, v in profile["comment"].items():
-                print("%s: %s" % (k, v))
+                print(Fore.YELLOW + Style.BRIGHT + "%s: %s" % (k, v))
         print("Loaded profile", filename)
 
 
@@ -666,7 +669,7 @@ if __name__ == "__main__":
                     print("- %s" % attr)
 
             import code
-            code.interact(local=locals(), banner="""
+            code.interact(local=locals(), banner=Fore.BLUE + Style.BRIGHT + """
     The Interface is now running and you've been dropped into Python's
     interactive console. The following objects are available:
 

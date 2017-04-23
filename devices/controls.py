@@ -54,6 +54,10 @@ class Control(object):
         Try to set the control to the provided value. Due to the configuration of the
         Control it might assume a different value. The assumed value is returned to
         the caller.
+
+        force should circumvent any stateful logic the control have and put it right
+        into the correct state for that value. This does not mean ignoring minval and
+        maxval though.
         """
         self._value = clip(self.minval, self.maxval, value)
         return self._value

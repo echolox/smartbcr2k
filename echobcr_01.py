@@ -140,6 +140,7 @@ def create(i):
     # END PER TRACK VIEW
 
     for index, view in enumerate(views_fx):
+
         for dial, target in zip(bcr.macros, macro_targets):
             view.map_this(dial.ID, target)
 
@@ -159,6 +160,9 @@ def create(i):
             params = [t_view.map[d.ID][0] for d in bcr.dialsc[index]]
 
             view.map_this(bcr.menu_rows(0)[track].ID, onoff)
+            if index in (4, 6):
+                view.configuration[bcr.menu_rows(0)[track].ID]["toggle"] = False
+
             for subparam, p in enumerate(params):
                 view.map_this(bcr.dialsc[track][subparam].ID, p)
 

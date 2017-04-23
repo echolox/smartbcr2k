@@ -476,12 +476,18 @@ class Interface(object):
             for ID in self.view.find_IDs_by_target(target):
                 self._set_control(ID, target.value)
 
-    def _set_control(self, ID, value):
+    def _set_control(self, ID, value, force=False):
         """
         Sets the control of the input device of the Interface and caches
         the set value in our recent_changes dict.
+
+        The force flag causes the Controls of the Device to assume a state
+        appropriate for that value. E.g.: Toggle buttons might be implemented
+        using an ignore state. Using force means "Assume the value and state
+        I provide" vs. "I'm trying to set this value, is that okay in your
+        current configuration?"
         """
-        set_value = self.input.set_control(ID, value).get()  # Returns a promise
+        set_value = self.input.set_control(ID, value, force=force).get()  # Returns a promise
         if set_value is not None:
             self.recent_changes["controls"][ID] = set_value
         
@@ -530,11 +536,11 @@ class Interface(object):
                     getattr(target, "value")
                 except AttributeError:
                     continue
-                self._set_control(ID, target.value)
+                self._set_control(ID, target.value, force=True)
                 untouched.remove(ID)
 
         for ID in untouched:
-            self._set_control(ID, 0)
+            self._set_control(ID, 0, force=True)
  
 
     ############## MODIFIERS ####################

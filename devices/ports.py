@@ -257,7 +257,7 @@ class Device(Port):
                 self.cc(control.ID, self.blink_state * control.maxval)
             self.last_blink = t
 
-    def set_control(self, ID, value, from_input=False, inform_listeners=False):
+    def set_control(self, ID, value, from_input=False, inform_listeners=False, force=False):
         """
         Try to set the value of a control. Depending on the flags the value is reported back to:
         - the hardware (self.input port)
@@ -269,6 +269,10 @@ class Device(Port):
         inform_listeners:  Whether to inform listeners about the value
                     @Robustness: Only works with one listener right now
                                  Gotta add some exclude functionality
+        force: Assures the value we try to set the control to is actually assumed,
+               circumventing any logic the control might implement. This is necessary
+               for actions like recalling previous values and bringing the control back
+               into that state.
 
         Default assumption: We call this from the outside, which means we only really
         want to set the control value on the hardware and not get the set value reported
@@ -285,7 +289,7 @@ class Device(Port):
         # The Control might implement some further logic which can result in a different
         # value being set than what we are trying to set here (think min/max-values or
         # ignoring button presses to simulate toggle behaviour).
-        real_value = control.set_value(value)
+        real_value = control.set_value(value, force=force)
         # Therefore we get the real_value reported back from the control which we can
         # then reflect on the input device. If None was returned, the control wants us
         # to ignore it

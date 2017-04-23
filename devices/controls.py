@@ -49,7 +49,7 @@ class Control(object):
     def get_value(self):
         return self._value
 
-    def set_value(self, value):
+    def set_value(self, value, force=False):
         """
         Try to set the control to the provided value. Due to the configuration of the
         Control it might assume a different value. The assumed value is returned to
@@ -127,12 +127,19 @@ class Button(Control):
             else:
                 self.on()
 
-    def set_value(self, value):
+    def set_value(self, value, force=False):
         """
         React to value changes on the hardware. If the button configured
         to toggle, we need to reflect that on the hardware where every
         button is actually momentary.
         """
+        if force:
+            if value > 0:
+                self.on()
+            else:
+                self.off()
+            return self._value
+
         # When in a toggle cycle, we need to ignore certain presses:
         # On:  Turn on
         # Off: Ignore

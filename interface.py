@@ -19,7 +19,7 @@ from rtmidi.midiconstants import CONTROL_CHANGE
 from util import keys_to_ints, unify, eprint, iprint
 from util.threadshell import Shell, yield_thread 
 
-from targets import get_target, Parameter, SwitchView
+from targets import get_target, Parameter, SwitchView, ValueTarget
 from devices import DeviceEvent, BCR2k, VirtualMidi
 from modifiers import get_modifier
 
@@ -187,6 +187,8 @@ class Interface(object):
         self.update_thread = Thread(target=self.main_loop, daemon=True)
 
         self.recent_changes = {}
+        self.last_modified_targets = set()
+
         self.reset_recent_changes()
 
         if auto_start:
@@ -400,11 +402,19 @@ class Interface(object):
             print("No target configured for ID %i" % ID)
             return
 
+        modified_targets = set()
         for target in targets:
             # Some targets should only trigger on certain values
             # TODO: Move this into the target.trigger method?
             if unify(value) in target.trigger_vals:
                 real_value = target.trigger(sender, value)
+
+                # We keep a set of last modified targets in the Interface
+                # but only for those modified due to a user action on the
+                # input device ... which is exactly here.
+                # This only works for Value Targets
+                if isinstance(target, ValueTarget) and real_value is not None:
+                    modified_targets.add(target)
 
                 if real_value is not None and value != real_value:
                     self._set_control(ID, real_value)
@@ -412,6 +422,8 @@ class Interface(object):
                     self.recent_changes["controls"][ID] = real_value
                 self.reflect_target_on_input(target, exclude_IDs=[ID])
 
+        if modified_targets:
+            self.last_modified_targets = modified_targets
 
     def from_output(self, sender, channel, cc, value):
         """

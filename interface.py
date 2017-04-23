@@ -667,17 +667,17 @@ if __name__ == "__main__":
 
             import code
             code.interact(local=locals(), banner="""
-                The Interface is now running and you've been dropped into Python's
-                interactive console. The following objects are available:
+    The Interface is now running and you've been dropped into Python's
+    interactive console. The following objects are available:
 
-                interface: The Interface making your Midi Controller smart
-                bcr:       Your BCR 2000 Midi Controller
-                loop:      The Midi Port that leads to your DAW
+    interface: The Interface making your Midi Controller smart
+    bcr:       Your BCR 2000 Midi Controller
+    loop:      The Midi Port that leads to your DAW
 
-                Call the function 'attributes' on an object to find out what attributes
-                it carries. eg.: attributes(interface)
+    Call the function 'attributes' on an object to find out what attributes
+    it carries. eg.: attributes(interface)
 
-                Exit using 'exit()'
+    Exit using 'exit()'
             """)
         else:
             while True:

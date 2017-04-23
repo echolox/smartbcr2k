@@ -2,4 +2,3 @@ colorama==0.3.7
 PyQt5==5.8.2
 python-rtmidi==1.0.0
 sip==4.19.2
-wheel==0.24.0

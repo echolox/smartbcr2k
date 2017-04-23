@@ -3,7 +3,10 @@ Execute this script with another script as its argument to create an Interface p
 
 The called script has to have a function called "create" that takes an Interface object.
 After that script has run the profile is saved to a file with the same name as the script,
-if an ---outfilename is not provided.
+if no outfilename argument is provided.
+
+You can add a dictionary called "comment" to your script that will be included and printed
+back whenever the profile is loaded later.
 """
 import argparse
 import importlib
@@ -11,19 +14,10 @@ import os.path
 
 from devices import BCR2k, VirtualMidi
 from interface import Interface, save_profile
+from util import eprint
 
 PROFILES_DIR = "profiles"
 PROFILES_EXT = "bcr"
-
-class ProfileNotFoundError(Exception):
-    pass
-
-
-def resolve_profile(name):
-    profile_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, PROFILES_EXT))
-    if not os.path.isfile(profile_file):
-        raise ProfileNotFoundError
-    return profile_file
 
 
 if __name__ == "__main__":
@@ -33,26 +27,31 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Decide the profile's filename
     if args.outfilename:
         outfilename = args.outfilename
     else:
         outfilename = "%s.bcr" % args.script
     outfilename = os.path.join(PROFILES_DIR, outfilename)
 
+    # Instantiate the objects that will be configured by the script
     bcr = BCR2k(auto_start=False)
     loop = VirtualMidi(auto_start=False)
-    
     interface = Interface(bcr, loop)
 
+    # Load the script and execute the creat function
     script = "%s.%s" % (PROFILES_DIR, args.script)
-
     module = importlib.import_module(script)
     module.create(interface)
 
+    # Fetch optional comment dictionary
     try:
         comment = module.comment
+        if not isinstance(comment, dict):
+            eprint("Comment expected to be an instance of dict, found %s." % type(comment))
+            eprint("Ignoring comment...")
+            comment = None
     except AttributeError:
         comment = None
-
 
     save_profile(interface, outfilename, comment=comment)

@@ -600,6 +600,24 @@ class Interface(object):
 
 ##################################
 
+class ProfileNotFoundError(Exception):
+    """
+    Thrown when a profile script could not be resolved by name.
+    """
+    pass
+
+
+def resolve_profile(name):
+    """
+    Find a script in the profiles dir/package by name. Raises ProfileNotFoundError
+    of none could be find.
+    """
+    profile_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, PROFILES_EXT))
+    if not os.path.isfile(profile_file):
+        raise ProfileNotFoundError
+    return profile_file
+
+
 def load_profile(interface, filename):
     with open(filename, "r") as infile:
         print("Loading", filename)

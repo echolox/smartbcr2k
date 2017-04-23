@@ -29,7 +29,6 @@ class FlexSetter(Target):
             self.deferred = None
 
         if value:
-            print(self, "Linking %s to %s" % (self.parent.last_modified_targets, self.flex))
             self.flex.link(self.parent.last_modified_targets)
 
     def serialize(self, *args, **kwargs):
@@ -65,8 +64,8 @@ class FlexParameter(ValueTarget):
         """
         self.parameters = set(targets)
         ft = next(iter(targets))
-        self.value = ft.value
-        self.parent.target_triggered(self, self.value, self)
+        self._value = ft.value
+        self.parent.target_triggered(self, self._value, self)
 
     def unlink(self):
         self.parameters = set()
@@ -80,6 +79,18 @@ class FlexParameter(ValueTarget):
             real_value = parameter.trigger(self, value)
 
         return real_value
+
+    @property
+    def value(self):
+        """
+        Pick a target from the ones linked to and return their value
+        """
+        try:
+            ft = next(iter(self.parameters))
+            return ft.value
+        except StopIteration:
+            # We are not linked to anything
+            return 0 
 
     @classmethod
     def blank(self, parent):

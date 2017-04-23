@@ -6,6 +6,8 @@ class ControlParent(object):
     parent object of this type (or another type that provides the same methods. This
     is Python, we don't enforce this, right?).
     """
+    def __init__(self, *args, **kwargs):
+        pass
     
     def send_to_device(self, ID, value):
         """

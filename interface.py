@@ -18,7 +18,11 @@ from collections import defaultdict as ddict
 from rtmidi.midiconstants import CONTROL_CHANGE
 
 from targets import get_target, Parameter, SwitchView
-from devices import Device, BCR2k, VirtualMidi, DeviceEvent
+
+from devices import DeviceEvent
+from bcr2k import BCR2k
+from virtualmidi import VirtualMidi
+
 from modifiers import get_modifier
 from threadshell import Shell, yield_thread 
 

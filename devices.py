@@ -14,13 +14,6 @@ from util import FULL, clip, eprint, dprint, iprint
 
 from threadshell import Shell, yield_thread
 
-# TODO: Figure out correct ports based on device names
-DEFAULT_IN_PORT = 3
-DEFAULT_OUT_PORT = 4
-
-DEFAULT_LOOP_IN = 10
-DEFAULT_LOOP_OUT = 11 
-
 BLINK_INTERVAL = 0.3  # in seconds
 
 def select_port(port_type="input"):
@@ -33,13 +26,6 @@ def select_port(port_type="input"):
         list_output_ports()
     print("Select Port by number: ", end="")
     return int(input())
-
-
-class DeviceEvent(Enum):
-    """
-    The type of events a Device would inform its listeners about.
-    """
-    CC = 1
 
 
 def ccc2ID(channel, cc, page=0, device_number=0):
@@ -81,16 +67,79 @@ def ID2ccc(ID, device_number=0):
     return (ID // 128) + 1, ID % 128
 
 
-# TODO: Unify the common functions of Device and OutputPort into a Parent class
+class Port(object):
+    """
+    Common parent to Device and Output Port. 
+    """
 
-class Device(ControlParent):
-
-    def __init__(self, name="Unnamed Device", interactive=False, auto_start=True):
+    def __init__(self, name="Unnamed Port", interactive=False, auto_start=True):
         self.name = name
         if interactive:
             self.output, self.outname = open_midioutput(select_port("output"))
             self.input,  self.inname  = open_midiinput (select_port("input"))
+        
+        # The port's main_loop is supposed to run in its own thread. It is only started if
+        # the object is constructed with auto_start = True or if the start method is called
+        self.thread = Thread(target=self.main_loop, daemon=True)
 
+        # Listeners to this Device register Queue objects to be informed of Events
+        self.listener_qs = set()
+
+        if auto_start:
+            if not (self.input and self.output):
+                print("Could not start the Device thread without any input or output configured")
+            else:
+                self.start()
+
+    def add_listener(self, q):
+        """
+        Add a listener queue to be informed of DeviceEvents
+        """
+        self.listener_qs.add(q)
+
+    def remove_listener(self, q):
+        """
+        Removes a queue from the listener qs
+        """
+        try:
+            self.listener_qs.remove(q)
+        except KeyError:
+            eprint("(Exception): Tried to remove Queue that wasn't registered:", q)
+
+    def start(self):
+        """
+        Start the main_loop of this device in its own thread
+        """
+        self.thread.start()
+
+    def main_loop(self):
+        """
+        The real work happens in update()
+        """
+        while True:
+            self.update()
+            yield_thread()
+
+    def update(self):
+        pass
+
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.__repr__()
+
+
+class DeviceEvent(Enum):
+    """
+    The type of events a Device would inform its listeners about.
+    """
+    CC = 1
+
+
+class Device(Port):
+
+    def __init__(self, *args, **kwargs):
         # The controls on this device are collected in a map with Control.ID -> Control object
         # For any object using this Device we abstract away which Control is mapped to which
         # Midi CC value and just handle them through their IDs. This enables us, among other things,
@@ -120,42 +169,16 @@ class Device(ControlParent):
         self.blink_state = False
         self.last_blink = time.time()
 
-        # The Device's main_loop is supposed to run in its own thread. It is only started if
-        # the object is constructed with auto_start = True of if the start method is called
-        self.thread = Thread(target=self.main_loop, daemon=True)
-
-        # Listeners to this Device register Queue objects to be informed of Events
-        self.listener_qs = set()
-
         # Create the controls this device actually has
         self.setup_controls()
 
-        if auto_start:
-            if not (self.input and self.output):
-                print("Could not start the Device thread without any input or output configured")
-            else:
-                self.start()
+        super().__init__(*args, **kwargs)
 
     def setup_controls(self):
         """
         Override to create and initialize controls on this Device.
         """
         pass
-
-    def add_listener(self, q):
-        """
-        Add a listener queue to be informed of DeviceEvents
-        """
-        self.listener_qs.add(q)
-
-    def remove_listener(self, q):
-        """
-        Removes a queue from the listener qs
-        """
-        try:
-            self.listener_qs.remove(q)
-        except KeyError:
-            eprint("(Exception): Tried to remove Queue that wasn't registered:", q)
 
     @property
     def page(self):
@@ -212,20 +235,6 @@ class Device(ControlParent):
         This is what Control objects call to effectively send their value to the hardware
         """
         self.cc(ID, value)
-
-    def start(self):
-        """
-        Start the main_loop of this device in its own thread
-        """
-        self.thread.start()
-
-    def main_loop(self):
-        """
-        The real work happens in update()
-        """
-        while True:
-            self.update()
-            yield_thread()
 
     def update(self):
         """
@@ -327,166 +336,20 @@ class Device(ControlParent):
             except Full:
                 print(listener, "is full")
 
-    def __repr__(self):
-        return self.name
 
-    def __str__(self):
-        return self.__repr__()
+class OutputEvent(Enum):
+    CC = 1
 
 
-class BCR2k(Device):
-    """
-    An implementation of the Behringer BCR 2000 Midi Controller. Configure your hardware like so:
-    - Set all controls to CC on channel 1 (eventually, right now 7 because my config is stupid and old)
-    - From the top left down to the bottom right, configure your Dials and Buttons to send out
-      CC values starting with 0 (eventually, right now 1 because my config is stupid and old)
-    - Set all buttons to momentary
-    - Set all value ranges from 0 to 127
-    """
-       
-    def __init__(self, channel_offset=7, *args, **kwargs):
-        # @Temp: Figure out the ports differently
-        self.output, self.outname = open_midioutput(DEFAULT_OUT_PORT)
-        self.input,  self.inname  = open_midiinput (DEFAULT_IN_PORT)
-
-        # Typically you would configure your BCR2k to start on channel 1
-        # Since I don't (or maybe didn't depending on when you read this)
-        # I needed a way to offset to channel 7 where my main page on the
-        # device starts.
-        self.channel_offset = channel_offset
-        super().__init__("BCR2k", *args, **kwargs)
-
-    def setup_controls(self):
-        ID = ccc2ID(self.channel_offset, 0) + 1  # Because I use Channel 7, starting with cc 1
-                                                 # That's gonna change eventually
-
-        # A helper function to create n controls of the given Class with some options
-        # Returns a list of newly created controls
-        def make_controls(ID, n, Cls, *args, **kwargs):
-            newly_added = []
-            for i in range(n):
-                c = self.controls[ID] = Cls(ID, self, *args, **kwargs)
-                newly_added.append(c)
-                ID += 1
-            return ID, newly_added
-
-        ID, self.macros = make_controls(ID, 32, Dial)
-        ID, self.macro_buttons = make_controls(ID, 32, Button, toggle=False)
-        ID, self.menu_buttons = make_controls(ID, 16, Button, toggle=True)
-
-        # We'll only paginate the main dials to get 48 instead of just 24
-        ID2 = ID + 16 * 128
-        ID, self.dials = make_controls(ID, 24, Dial)
-        _,  page2_dials = make_controls(ID2, 24, Dial)
-        self.dials.extend(page2_dials)
-
-        # Dials by column and Dials by row
-        self.dialsc = [[] for _ in range(8)]
-        self.dialsr = [[] for _ in range(6)]
-        row = 0
-        column = 0
-        for dial in self.dials:
-            self.dialsr[row].append(dial)
-            self.dialsc[column].append(dial)
-
-            column += 1
-            if column == 8:
-                column = 0
-                row += 1
-
-        ID, self.command_buttons = make_controls(ID, 4, Button, toggle=False)
-
-    def macro_bank(self, bank):
-        """
-        Returns a list of 8 macros on the zero-indexed bank (0, 1, 2, 3).
-        """
-        return self.macros[bank * 8: bank * 8 + 8]
-
-    def macro_bank_buttons(self, bank):
-        """
-        Analog to macro_bank but for its buttons.
-        """
-        return self.macros_buttons[bank * 8: bank * 8 + 8]
-
-    def menu_rows(self, row):
-        """
-        Returns the row of buttons below the macro dials. Zero-indexed
-        """
-        return self.menu_buttons[row * 8: row * 8 + 8]
-
-    def page_update(self):
-        """
-        We only paginate the main dials so depending on the active page we only want to
-        update the main dials that are actively shown.
-        """
-        p = self.page
-        for dial in self.dials[p*24:p*24 + 24]:
-            self.cc(dial.ID, dial.get_value())
-
-    def control_on_active_page(self, control):
-        """
-        Again, since we only paginate the main dials all other controls are always on the
-        active page.
-        """
-        if control in self.dials:
-            return super().control_on_active_page(control)
-        else:
-            return True
-
-
-# TODO: Compare to Device, can we make a parent Class for both?
-class OutputPort(object):
+class OutputPort(Port):
     """
     An output port forwards whatever messages we send into it to its connected
     midi output while also reporting back and values it receives. Example:
-    Interface <-+-> Device
-                |
-                +-> OutputPort <-> Virtual Midi Cable <-> Ableton Live
+    OutputPort <-> Virtual Midi Cable Driver <-> Ableton Live (or other DAW)
     """
-    def __init__(self, name="unnamed", interactive=False, auto_start=True):
-        self.name = name
-        if interactive:
-            self.output, self.outname = open_midioutput(select_port("output"))
-            self.input,  self.inname  = open_midiinput (select_port("input"))
-
-        self.thread = Thread(target=self.main_loop, daemon=True)
-
+    def __init__(self, *args, **kwargs):
         self.last_sent_values = {}
-        self.listener_qs = []
-
-        if auto_start:
-            if not (self.input and self.output):
-                print("Could not start the Device thread without any input or output configured")
-            else:
-                self.start()
-
-    def add_listener(self, q):
-        """
-        Add a listener queue to be informed of DeviceEvents
-        """
-        if q not in self.listener_qs:
-            self.listener_qs.append(q)
-
-    def remove_listener(self, q):
-        """
-        Removes a queue from the listener qs
-        """
-        try:
-            self.listener_qs.remove(q)
-        except ValueError:
-            print("(Exception): Tried to remove Queue that wasn't registered:", q)
-            pass
-
-    def start(self):
-        """
-        Start the main_loop of this device
-        """
-        self.thread.start()
-
-    def main_loop(self):
-        while True:
-            self.update()
-            yield_thread()
+        super().__init__(*args, **kwargs)
 
     def update(self):
         t = time.time()
@@ -533,54 +396,3 @@ class OutputPort(object):
                 listener.put_nowait((OutputEvent.CC, self, channel, cc, value))
             except Full:
                 print(listener, "is full")
-
-    def __repr__(self):
-        return self.name
-
-    def __str__(self):
-        return self.__repr__()
-
-
-class OutputEvent(Enum):
-    CC = 1
-
-
-class VirtualMidi(OutputPort):
-
-    def __init__(self, *args, **kwargs):
-        self.input,  self.inname  = open_midiinput (DEFAULT_LOOP_IN)
-        self.output, self.outname = open_midioutput(DEFAULT_LOOP_OUT)
-        super().__init__("VirtualMidi", *args, **kwargs)
-
-        self.ignore_daw = kwargs.get("ignore_daw", False)
-            
-    def input_callback(self, event):
-        if not self.ignore_daw:
-            super().input_callback(event)
-
-
-if __name__ == "__main__":
-    list_input_ports()
-    list_output_ports()
-    bcr = BCR2k(auto_start=False)
-    sbcr = Shell(bcr, bcr.update)
-
-    from queue import Queue
-    q = Queue()
-    sbcr.add_listener(q)
-    sbcr.set_control(90, 127)
-    print(bcr)
-    c = sbcr.get_control(91).get()
-    print(c)
-
-    try:
-        while True:
-            try:
-                event, *data = q.get_nowait()
-                print(event.name, data)
-            except Empty:
-                pass
-    except KeyboardInterrupt:
-        pass
-
-    bcr.remove_listener(q)

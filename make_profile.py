@@ -13,11 +13,8 @@ import importlib
 import os.path
 
 from devices import BCR2k, VirtualMidi
-from interface import Interface, save_profile
+from interface import Interface, save_profile, PROFILES_DIR, PROFILES_EXT
 from util import eprint
-
-PROFILES_DIR = "profiles"
-PROFILES_EXT = "bcr"
 
 
 if __name__ == "__main__":

@@ -127,6 +127,8 @@ def create(i):
 
         for dial, target in zip(bcr.macros, macro_targets):
             view.map_this(dial.ID, target)
+        for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
+            view.map_this(mbutton.ID, target)
 
         fx_onoff = []
         it = 1
@@ -190,6 +192,9 @@ def create(i):
 
         for dial, target in zip(bcr.macros, macro_targets):
             view.map_this(dial.ID, target)
+        for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
+            view.map_this(mbutton.ID, target)
+
 
         it = 0
         for button, target in zip(bcr.menu_rows(1), switch_fx):

@@ -1,3 +1,4 @@
+import os
 import time
 import rtmidi
 import json
@@ -600,6 +601,9 @@ class Interface(object):
 
 ##################################
 
+PROFILES_DIR = "profiles"
+PROFILES_EXT = "bcr"
+
 class ProfileNotFoundError(Exception):
     """
     Thrown when a profile script could not be resolved by name.
@@ -639,8 +643,6 @@ def save_profile(interface, filename, comment=None):
 
 
 if __name__ == "__main__":
-    from make_profile import resolve_profile
-
     parser = argparse.ArgumentParser(description='Run the commandline interface')
     parser.add_argument('profile', help='A profile to load')
     parser.add_argument('-i', '--interactive', dest='interactive', action='store_true',

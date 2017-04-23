@@ -7,10 +7,26 @@ if an ---outfilename is not provided.
 """
 import argparse
 import importlib
+import os.path
 
-from bcr2k import BCR2k
-from virtualmidi import VirtualMidi
+from devices import BCR2k, VirtualMidi
 from interface import Interface, save_profile
+
+import profiles
+
+PROFILES_EXT = "bcr"
+PROFILES_DIR = "profiles"
+
+class ProfileNotFoundError(Exception):
+    pass
+
+
+def resolve_profile(name):
+    profile_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, PROFILES_EXT))
+    if not os.path.isfile(profile_file):
+        raise ProfileNotFoundError
+    return profile_file
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create a profile from a script.')
@@ -23,12 +39,15 @@ if __name__ == "__main__":
         outfilename = args.outfilename
     else:
         outfilename = "%s.bcr" % args.script
+    outfilename = os.path.join(PROFILES_DIR, outfilename)
 
     bcr = BCR2k(auto_start=False)
     loop = VirtualMidi(auto_start=False)
     
     interface = Interface(bcr, loop)
 
-    module = importlib.import_module(args.script)
+    script = "%s.%s" % (PROFILES_DIR, args.script)
+
+    module = importlib.import_module(script)
     module.create(interface)
     save_profile(interface, outfilename)

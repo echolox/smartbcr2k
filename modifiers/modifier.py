@@ -148,28 +148,3 @@ class LFOSine(Modifier):
 
     def calculate(self, t):
         return (sin(t * self.frequency) + 1) * 0.5
-
-
-# Create a catalogue of modifiers to fetch Classes by name
-MODIFIERS = {C.__name__: C for C in globals().values() if isclass(C) and issubclass(C, Modifier)}
-
-def get_modifier(name):
-    """
-    Retrieves the Modifier class by name. Raises KeyError if the Modifier does not exist.
-    """
-    return MODIFIERS[name]
-
-if __name__ == '__main__':
-    r = LFOSine()
-    s = LFOSine(0.3)
-
-    t = ValueTarget("Testing", None)
-    t.value = 64
-
-    s.target(t, power=1.0)
-    r.target(t, power=-1.0)
-
-    for i in range(10):
-        print("LFO1:", r.tick(i))
-        print("LFO2:", s.tick(i))
-        print("Target:", t.value)

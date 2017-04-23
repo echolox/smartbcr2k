@@ -1,32 +1,27 @@
-from copy import copy
 import time
 import rtmidi
 import json
 import sys
 import argparse
-from queue import Queue, Empty, Full
-
 import traceback
-from threading import Thread
 
+from threading import Thread
+from queue import Queue, Empty, Full
 from importlib import import_module
 
+from copy import copy
 from enum import Enum
 from collections import namedtuple
 from collections import defaultdict as ddict
 
 from rtmidi.midiconstants import CONTROL_CHANGE
 
-from targets import get_target, Parameter, SwitchView
-
-from devices import DeviceEvent
-from bcr2k import BCR2k
-from virtualmidi import VirtualMidi
-
-from modifiers import get_modifier
-from threadshell import Shell, yield_thread 
-
 from util import keys_to_ints, unify, eprint, iprint
+from util.threadshell import Shell, yield_thread 
+
+from targets import get_target, Parameter, SwitchView
+from devices import DeviceEvent, BCR2k, VirtualMidi
+from modifiers import get_modifier
 
 
 class Exhausted(Exception):
@@ -583,78 +578,12 @@ def save_profile(interface, filename):
         print("Saved to %s" % filename)
 
 
-def test(i):
-    with open("default.bcr", "r") as infile:
-        p = json.load(infile)
-        i.load_profile(p)
-
-    while True:
-        bcr.update(time.time())
-
-
-def test2(i):
-    t = i.quick_parameter(1)
-    for macro in i.input.macros[0][1:]:
-        i.view.map_this(macro.ID, t)
-
-    if True:
-        from modifiers import LFOSine
-        s = LFOSine(frequency=1)
-        i.add_modifier(s)
-        s.target(t)
-
-    init_view = i.view
-    _, second_view = i.quick_view(105)
-    i.quick_view(105, to_view=init_view, on_view=second_view)
-
-    # Dials
-    i.quick_parameter(81)
-    i.quick_parameter(82)
-    t = i.quick_parameter(83)
-    i.view.map_this(84, t)
-
-
-    # Command button momentary
-    i.quick_parameter(106)
-
-    i.switch_to_view(second_view)
-
-    i.quick_parameter(81)
-    i.quick_parameter(82)
-    t = i.quick_parameter(83)
-    i.view.map_this(84, t)
-
-    # Command button toggle
-    tt = i.quick_parameter(106)
-    second_view.configuration[106]["toggle"] = True
-    # TODO: This is indirect configuration
-
-
-    i.switch_to_view(init_view)
-    i.view.map_this(107, tt)
-    i.view.configuration[107]["toggle"] = True
-
-    save_profile(i, "default.bcr")
-
-
-
-
-def fun(bcr):
-    x = 0
-    import math
-    import time
-    while True:
-        time.sleep(0.05)
-        for i in range(81, 104 + 1):
-            v = min(math.sin(x - (i-81)*0.1) * 64 + 64, 127)
-            bcr.send(i, v)
-        x += 0.2
-
 if __name__ == "__main__":
+    from make_profile import resolve_profile
+
     parser = argparse.ArgumentParser(description='Run the commandline interface')
-    parser.add_argument('-p', '--profile', default="default.bcr", help='which profile to load')
+    parser.add_argument('profile', help='A profile to load')
     args = parser.parse_args()
-  
 
     bcr = BCR2k(auto_start=False)
     loop = VirtualMidi(auto_start=False)
@@ -663,11 +592,10 @@ if __name__ == "__main__":
     interface = Interface(bcr, loop)
     print("Interface started")
 
-    load_profile(interface, args.profile)
-
+    profile_file = resolve_profile(args.profile)
+    load_profile(interface, profile_file)
 
     try:
-        b = bcr.controls[844]
         while True:
             import code
             code.interact(local=locals())

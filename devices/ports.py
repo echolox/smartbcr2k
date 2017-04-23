@@ -1,4 +1,3 @@
-# TODO: Move devices into their own package
 import time
 
 from enum import Enum
@@ -9,10 +8,10 @@ import rtmidi
 from rtmidi.midiconstants import CONTROL_CHANGE
 from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
 
-from controls import Dial, Button, ControlParent
 from util import FULL, clip, eprint, dprint, iprint
+from util.threadshell import Shell, yield_thread
 
-from threadshell import Shell, yield_thread
+from .controls import Dial, Button, ControlParent
 
 BLINK_INTERVAL = 0.3  # in seconds
 

@@ -1,6 +1,7 @@
-from controls import Dial, Button
-from devices import Device, ccc2ID, ID2ccc
 from rtmidi.midiutil import open_midioutput, open_midiinput
+
+from .controls import Dial, Button
+from .ports import Device, ccc2ID, ID2ccc
 
 # TODO: Figure out correct ports based on device names
 DEFAULT_IN_PORT = 3

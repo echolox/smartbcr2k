@@ -200,10 +200,4 @@ class Parameter(ValueTarget):
     def is_connected_to_output(self, channel, cc):
         return channel == self.channel and cc == self.cc
 
-from inspect import isclass
-TARGETS = {C.__name__: C for C in globals().values() if isclass(C) and issubclass(C, Target)}
-
-def get_target(name):
-    return TARGETS[name]
-
 

@@ -12,10 +12,8 @@ import os.path
 from devices import BCR2k, VirtualMidi
 from interface import Interface, save_profile
 
-import profiles
-
-PROFILES_EXT = "bcr"
 PROFILES_DIR = "profiles"
+PROFILES_EXT = "bcr"
 
 class ProfileNotFoundError(Exception):
     pass

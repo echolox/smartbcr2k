@@ -616,7 +616,7 @@ def save_profile(interface, filename, comment=None):
         profile = interface.make_profile()
         if comment:
             profile["comment"] = comment
-        json.dump(profile, outfile, sort_keys=True, indent=2)
+        json.dump(profile, outfile, sort_keys=True)
         print("Saved to %s" % filename)
 
 

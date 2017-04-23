@@ -603,13 +603,20 @@ class Interface(object):
 def load_profile(interface, filename):
     with open(filename, "r") as infile:
         print("Loading", filename)
-        interface.load_profile(json.load(infile))
+        profile = json.load(infile)
+        interface.load_profile(profile)
+        if "comment" in profile:
+            for k, v in profile["comment"].items():
+                print("%s: %s" % (k, v))
         print("Loaded profile", filename)
 
 
-def save_profile(interface, filename):
+def save_profile(interface, filename, comment=None):
     with open(filename, "w") as outfile:
-        json.dump(interface.make_profile(), outfile, sort_keys=True, indent=2)
+        profile = interface.make_profile()
+        if comment:
+            profile["comment"] = comment
+        json.dump(profile, outfile, sort_keys=True, indent=2)
         print("Saved to %s" % filename)
 
 
@@ -618,6 +625,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Run the commandline interface')
     parser.add_argument('profile', help='A profile to load')
+    parser.add_argument('-i', '--interactive', dest='interactive', action='store_true',
+                        help="Drop into the interactive Python console when running.")
     args = parser.parse_args()
 
     bcr = BCR2k(auto_start=False)
@@ -631,9 +640,28 @@ if __name__ == "__main__":
     load_profile(interface, profile_file)
 
     try:
-        while True:
+        if args.interactive:
+            def attributes(obj):
+                for attr in obj.__dict__.keys():
+                    print("- %s" % attr)
+
             import code
-            code.interact(local=locals())
+            code.interact(local=locals(), banner="""
+                The Interface is now running and you've been dropped into Python's
+                interactive console. The following objects are available:
+
+                interface: The Interface making your Midi Controller smart
+                bcr:       Your BCR 2000 Midi Controller
+                loop:      The Midi Port that leads to your DAW
+
+                Call the function 'attributes' on an object to find out what attributes
+                it carries. eg.: attributes(interface)
+
+                Exit using 'exit()'
+            """)
+        else:
+            while True:
+                yield_thread()
     except KeyboardInterrupt:
         pass
 

@@ -3,6 +3,42 @@ from interface import View
 from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter
 from util import flatten, iprint
 
+comment = {
+    "author": "Matt 'Echolox' Duncan",
+    "comment":
+        """
+        The main feature of this profile is the "Struct of Arrays" vs "Arrays of Structs"
+        approach. The two rows of buttons on the BCR2k map to these two kinds of views.
+
+        From the init view...
+        Pushing a button on the upper row selects the respective track and displays
+        all 8 FX on that track from left to right. The buttons in the lower row activate
+        those FX.
+
+        Pushing a button on the lower row selects the respective fx and displays all
+        8 tracks from left to right. The buttons in the uper row now activate those FX.
+
+        So you can either choose a track and manipulate all FX on that or select an
+        effect and have all tracks in front of you so you can manipulate the same effect
+        on all tracks at once.
+
+        The BCR2k's pageflip button is mapped to the lower left of the buttons on the
+        bottom right of the unit.
+
+        The first Macro Bank is set to FlexParameters. Manipulate any dial and then
+        click the button of a macro dial to map that dial to the same Parameter you
+        manipulated previously.
+
+
+        If you want to support the development of this project check out my music
+        on echolox.bandcamp.com or youtube.com/echolox and leave a few bucks if you like :)
+        """,
+    "email": "echolox+dev@gmail.com",
+    "bandcamp": "echolox.bandcamp.com",
+    "website": "echolox.com",
+    "twitter": "@echolox",
+}
+
 def create(i):
     bcr = i.input._o
 

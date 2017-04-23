@@ -50,4 +50,11 @@ if __name__ == "__main__":
 
     module = importlib.import_module(script)
     module.create(interface)
-    save_profile(interface, outfilename)
+
+    try:
+        comment = module.comment
+    except AttributeError:
+        comment = None
+
+
+    save_profile(interface, outfilename, comment=comment)

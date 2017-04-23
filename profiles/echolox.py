@@ -16,7 +16,7 @@ comment = {
         those FX.
 
         Pushing a button on the lower row selects the respective fx and displays all
-        8 tracks from left to right. The buttons in the uper row now activate those FX.
+        8 tracks from left to right. The buttons in the upper row now activate those FX.
 
         So you can either choose a track and manipulate all FX on that or select an
         effect and have all tracks in front of you so you can manipulate the same effect
@@ -62,10 +62,7 @@ def create(i):
         init_view.map_this(mbutton.ID, target)
 
     # Need 8 parameters to keep offset because I'm too lazy to remap in Ableton
-    # We map to ID 0 because that is unused
     i.parameter_maker.skip(8)
-#    for _ in range(8):
-        #discard = i.quick_parameter(0)
 
     # 2: Parameters (Patch selection)
     for macro in bcr.macro_bank(1):

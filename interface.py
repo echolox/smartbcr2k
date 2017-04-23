@@ -32,6 +32,7 @@ from util import keys_to_ints, unify, eprint, iprint
 class Exhausted(Exception):
     pass
 
+
 class ParameterMaker(object):
     """
     Produces Targets of the type Parameter. Everytime a new target is
@@ -60,6 +61,7 @@ class ParameterMaker(object):
             else:
                 self.exhausted = True
         return t
+
 
 class ViewMaker(object):
 
@@ -511,7 +513,7 @@ class Interface(object):
 
     def remove_modifier(self, modifier):
         try:
-            self.modifier.remove(modifier)
+            self.modifiers.remove(modifier)
         except KeyError:
             pass
 

@@ -8,7 +8,9 @@ if an ---outfilename is not provided.
 import argparse
 import importlib
 
-from interface import Interface, BCR2k, VirtualMidi, save_profile
+from bcr2k import BCR2k
+from virtualmidi import VirtualMidi
+from interface import Interface, save_profile
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create a profile from a script.')

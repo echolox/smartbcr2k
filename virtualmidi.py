@@ -1,8 +1,8 @@
 from rtmidi.midiutil import open_midioutput, open_midiinput
 from devices import OutputPort
 
-DEFAULT_LOOP_IN = 10
-DEFAULT_LOOP_OUT = 11 
+DEFAULT_LOOP_IN = 11
+DEFAULT_LOOP_OUT = 12 
 
 class VirtualMidi(OutputPort):
 

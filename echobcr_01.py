@@ -1,7 +1,7 @@
 from modifiers import LFOSine
 from interface import View
 from targets import Parameter, SwitchView, PageFlip
-from util import flatten
+from util import flatten, iprint
 
 def create(i):
     bcr = i.input._o
@@ -82,9 +82,10 @@ def create(i):
 
         fx_onoff = []
         it = 1
-        for channel, cc in [next(gen)] * 8:
+        for channel, cc in [next(gen) for _ in range(8)]:
             p = Parameter("T%i_FX%i_OnOff" % (track_index + 1, it),
                           i, channel, cc, is_button=True) 
+
             fx_onoff.append(p)
             it += 1
 
@@ -96,6 +97,7 @@ def create(i):
                           i, channel, cc)
             fx_params.append(p)
             subparam_index = (subparam_index + 1) % 3
+            iprint(cc == 123, p)
             if subparam_index == 0:
                 fx_index += 1
 
@@ -112,8 +114,17 @@ def create(i):
 
 
         # Second Row Buttons: FX On Off
+        it = 1
         for button, target in zip(bcr.menu_rows(1), fx_onoff):
             view.map_this(button.ID, target)
+
+            # SPECIAL CASE: Stutter and Repeater momentary
+            # @TODO: Move this somewhere else for easier configuration
+            if it in (5, 7):
+                view.configuration[button.ID]["toggle"] = False
+
+            it += 1
+
          
         # Dials:
         for dial, target in zip(dials, fx_params):

@@ -2,6 +2,7 @@ from inspect import isclass
 
 from .target import *
 from .flex import * 
+from .modview import *
 
 TARGETS = {C.__name__: C for C in globals().values()
                        if isclass(C) and issubclass(C, Target)}

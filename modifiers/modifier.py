@@ -10,6 +10,12 @@ from util import FULL, eprint, dprint, iprint
 MIN_MOD = 0
 MAX_MOD = 127
 
+counter = 0
+def modname_gen(modifier):
+    global counter
+    counter += 1
+    return "%s_%i" % (type(modifier).__name__, counter)
+
 class Modifier(object):
     """
     A modifier keeps a list of targets which it periodically updates
@@ -19,7 +25,11 @@ class Modifier(object):
     method calculate.
     """
 
-    def __init__(self, amplitude=MAX_MOD):
+    def __init__(self, name=None, amplitude=MAX_MOD):
+        if name is None:
+            self.name = modname_gen(self)
+        else:
+            self.name = name
         self._amplitude = amplitude  # The maximum value the Modifier will take on
         self._value = 0              # The actual current value of the Modifier at any given time
 
@@ -31,6 +41,7 @@ class Modifier(object):
         """
         m = {"amplitude": self._amplitude,
              "type": type(self).__name__,
+             "name": self.name,
             }
         m["targets"] = {t.name: power for t, power in self.targets.items()}
         return m

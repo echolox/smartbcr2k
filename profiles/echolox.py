@@ -1,6 +1,6 @@
 from modifiers import LFOSine
 from interface import View
-from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter
+from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView
 from util import flatten, iprint
 
 comment = {
@@ -42,6 +42,13 @@ comment = {
 def create(i):
     bcr = i.input._o
 
+    s = LFOSine(frequency=0.5)
+    sview = ModView("LFOSine_ModView", i, s)
+    i.add_modifier(s)
+    modview_button = bcr.command_buttons[0]
+    i.view.map_this(modview_button.ID, sview)
+
+
     ### MACRO BANKS ###
     ## Dials: Parameters
     ## Buttons: Not used
@@ -50,6 +57,7 @@ def create(i):
 
     global_pageflip = PageFlip("Global Pageflip", i, bcr)
     pageflip_button = bcr.command_buttons[2]
+
 
     # 1: Flex Targets
     macro_targets = [FlexParameter("Flex_%i" % (it + 1), i) for it in range(8)]

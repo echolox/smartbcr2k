@@ -111,6 +111,8 @@ class View(object):
     values on the hardware.
     """
     def __init__(self, device, name="Unnamed View"):
+        # WARNING! The device might be in a threadshell, therefore do not use any of its
+        #          methods. Just access attributes. Methods on those attributes are fine though.
         self.name = name
         # Map IDs of a device's controls to configurations:
         # - Buttons: toggle vs momentary
@@ -275,7 +277,7 @@ class Interface(object):
                     try:
                         T = get_target(t["type"])
                     except KeyError as e:
-                        eprint(e)
+                        eprint("Targets", e)
                         continue
                     target = T.blank(self)
                     target.from_dict(t)
@@ -288,7 +290,7 @@ class Interface(object):
             try:
                 M = get_modifier(m["type"])
             except KeyError as e:
-                eprint(e)
+                eprint("Mods", e)
                 continue
             mod = M()
             mod.from_dict(m, self.targets)
@@ -319,7 +321,7 @@ class Interface(object):
         else:
             return False
 
-    def switch_to_view(self, view):
+    def switch_to_view(self, view, temp=False):
         """
         Switches to the provided view. If this is a new view it will
         be added to the Interface's view catalog and all targets of
@@ -344,7 +346,8 @@ class Interface(object):
             except KeyError:
                 pass
 
-        new_view = self.add_view(view)
+        if not temp:
+            new_view = self.add_view(view)
 
         self.reflect_all_on_input()
         print("[%s] Switched to %s" % (self, view))
@@ -559,6 +562,12 @@ class Interface(object):
             self.modifiers.remove(modifier)
         except KeyError:
             pass
+
+    def get_modifier(self, name):
+        try:
+            return next(filter(lambda m: m.name == name, self.modifiers))
+        except StopIteration:
+            raise KeyError
 
     ############## UPDATING ####################
 

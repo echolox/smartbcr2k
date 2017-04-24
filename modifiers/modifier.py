@@ -138,15 +138,19 @@ class Modifier(object):
         return {
             "_value": self._value,
             "_amplitude": self._amplitude,
-            "targets": self.targets
+            "targets": {t.name: value for t, value in self.targets.items()},
         }
 
-    def load(self, d):
+    def load(self, d, i):
         """
         """
         self._value = d["_value"]
         self._amplitude = d["_amplitude"]
-        self.targets = d["targets"]
+        self.targets = ddict(lambda: 0.0)
+        for tname, value in d["targets"]:
+            target = i.targets[tname]
+            self.targets[target] = value
+
 
     def __repr__(self):
         return type(self).__name__

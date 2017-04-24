@@ -238,7 +238,7 @@ class Interface(object):
             self.targets[tname].load(state)            
 
         for modname, state in self.snapshots[slot]["modifiers"].items():
-            self.get_modifier(modname).load(state)            
+            self.get_modifier(modname).load(state, self) 
         
         self.reflect_all_on_input()
 
@@ -637,23 +637,41 @@ class Interface(object):
 
 PROFILES_DIR = "profiles"
 PROFILES_EXT = "bcr"
-
-class ProfileNotFoundError(Exception):
-    """
-    Thrown when a profile script could not be resolved by name.
-    """
-    pass
+PROFILES_EXT = "snp"
 
 
 def resolve_profile(name):
     """
-    Find a script in the profiles dir/package by name. Raises ProfileNotFoundError
-    of none could be find.
+    Find a script in the profiles dir/package by name.
     """
     profile_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, PROFILES_EXT))
+    print(profile_file)
     if not os.path.isfile(profile_file):
-        raise ProfileNotFoundError
+        raise FileNotFoundError
     return profile_file
+
+
+def resolve_snapshots(name):
+    """
+    Find a script in the profiles dir/package by name.
+    """
+    snapshots_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, SNAPSHOTS_EXT))
+    if not os.path.isfile(profile_file):
+        raise FileNotFoundError
+    return snapshots_file
+
+
+def load_snapshots(interface, filename):
+    with open(filename, "r") as infile:
+        print("Loading", filename)
+        interface.snapshots = json.load(infile)
+        interface.load_snapshot("recall")
+
+def save_profile(interface, filename, comment=None):
+    with open(filename, "w") as outfile:
+        interface.save_snapshot("recall")
+        json.dump(interface.snapshots, outfile, sort_keys=True)
+        print("Saved snapshots to %s" % filename)
 
 
 def load_profile(interface, filename):
@@ -672,7 +690,7 @@ def save_profile(interface, filename, comment=None):
         if comment:
             profile["comment"] = comment
         json.dump(profile, outfile, sort_keys=True)
-        print("Saved to %s" % filename)
+        print("Saved profile to %s" % filename)
 
 
 if __name__ == "__main__":
@@ -690,8 +708,12 @@ if __name__ == "__main__":
     print("Interface started")
 
     profile_file = resolve_profile(args.profile)
+    snapshot_file = resolve_snapshots(args.profile)
     load_profile(interface, profile_file)
-
+    try:
+        load_snapshots(interface, snapshot_file)
+    except FileNotFoundError:
+        print("No snapshots available")
 
     try:
         if args.interactive:
@@ -724,5 +746,8 @@ if __name__ == "__main__":
                 yield_thread()
     except KeyboardInterrupt:
         pass
+
+    print("CLOSING UP SHOPT")
+    save_snapshots(interface, snapshot_file)
 
     exit()

@@ -138,19 +138,19 @@ class ValueTarget(Target):
         self._value = initial  # This is the 'center' value
         self.minimum = minimum
         self.maximum = maximum
-        self.modifiers = ddict(lambda: 0.0)  # object -> float
+        self.modifiers = ddict(lambda: 0.0)  # object_name -> float
 
     def modify(self, modifier, value):
         """
         """
-        self.modifiers[modifier] = value
+        self.modifiers[modifier.name] = value
         self.trigger(modifier)
 
     def remove_modifier(self, modifier):
         """
         """
         try:
-            del self.modifiers[modifier]
+            del self.modifiers[modifier.name]
         except KeyError:
             pass
 
@@ -185,8 +185,7 @@ class ValueTarget(Target):
     def load(self, d):
         super().load(d)
         self._value = d["_value"]
-        self.modifiers = d["modifiers"]
-
+        self.modifiers = ddict(lambda: 0.0, d["modifiers"])
 
 class Parameter(ValueTarget):
     """

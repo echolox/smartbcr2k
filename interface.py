@@ -637,7 +637,7 @@ class Interface(object):
 
 PROFILES_DIR = "profiles"
 PROFILES_EXT = "bcr"
-PROFILES_EXT = "snp"
+SNAPSHOTS_EXT = "snp"
 
 
 def resolve_profile(name):
@@ -667,7 +667,7 @@ def load_snapshots(interface, filename):
         interface.snapshots = json.load(infile)
         interface.load_snapshot("recall")
 
-def save_profile(interface, filename, comment=None):
+def save_snapshots(interface, filename, comment=None):
     with open(filename, "w") as outfile:
         interface.save_snapshot("recall")
         json.dump(interface.snapshots, outfile, sort_keys=True)

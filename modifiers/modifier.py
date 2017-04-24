@@ -147,7 +147,7 @@ class Modifier(object):
         self._value = d["_value"]
         self._amplitude = d["_amplitude"]
         self.targets = ddict(lambda: 0.0)
-        for tname, value in d["targets"]:
+        for tname, value in d["targets"].items():
             target = i.targets[tname]
             self.targets[target] = value
 
@@ -185,6 +185,6 @@ class LFOSine(Modifier):
         d["frequency"] = self.frequency
         return d
 
-    def load(self, d):
-        super().load(d)
+    def load(self, d, i):
+        super().load(d, i)
         self.frequency = d["frequency"]

@@ -77,15 +77,3 @@ class SnapshotSelector(ValueTarget):
     def blank(self, parent):
         return SnapshotSelector("unnamed", parent)
 
-    def trigger(self, sender, value=None):
-        """
-        Forwards the value to the configured (output) Device with
-        the transmitted value.
-        """
-        super().trigger(sender, self.value)
-        self.value = value
-
-        return self.value
-
-
-

@@ -166,6 +166,13 @@ class ValueTarget(Target):
         self._value += delta        # Add directly to private variable
                                     # to modify the center value
 
+    def trigger(self, sender, value=None):
+        super().trigger(sender, value)
+        if value is not None:
+            self.value = value
+
+        return self.value
+
     @property
     def value(self):
         return int(clip(self.minimum, self.maximum,
@@ -231,7 +238,10 @@ class Parameter(ValueTarget):
 
         if sender != self.parent.output:
             self.parent.to_output(self.channel, self.cc, self.value)
-        super().trigger(sender, self.value)
+
+        # Skip the ValueTarget parent because of our complicated way of setting
+        # self._value and go directly to its Parent, Target
+        Target.trigger(self, sender, self.value)
         return self.value
 
     def from_dict(self, d):

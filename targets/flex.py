@@ -44,8 +44,8 @@ class FlexSetter(Target):
             eprint("Flex target %s for %s not yet instantiated. Defering until first trigger")
             self.deferred = d["flex"]
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return FlexSetter("unnamed", parent, None)
 
 
@@ -92,12 +92,9 @@ class FlexParameter(ValueTarget):
             # We are not linked to anything
             return 0 
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return FlexParameter("unnamed", parent)
 
     def is_connected_to(self, target):
         return target in self.parameters
-
-    # @BUG: There is a bug where switching views sets the hardware mapped to this
-    #       target to some wrong value. It otherwise functions correctly though.

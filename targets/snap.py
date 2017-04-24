@@ -57,8 +57,8 @@ class SnapshotButton(Target):
             eprint("Selector target %s for %s not yet instantiated. Defering until first trigger")
             self.deferred = d["flex"]
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return SnapshotButton("unnamed", parent, None)
 
 
@@ -73,7 +73,7 @@ class SnapshotSelector(ValueTarget):
     def issue_save(self):
         self.parent.save_snapshot(self.value)
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return SnapshotSelector("unnamed", parent)
 

@@ -31,6 +31,7 @@ class ModPower(ValueTarget):
         super().trigger(sender, self.value)
         return self.value
 
+    # Doesn't need a blank because they never live to be saved into a profile
 
 
 class ModView(Target):
@@ -96,7 +97,7 @@ class ModView(Target):
             self.deferred = name
 
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return ModView("unnamed", parent, None)
 

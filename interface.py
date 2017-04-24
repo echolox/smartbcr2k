@@ -224,6 +224,7 @@ class Interface(object):
             return None
 
     def save_snapshot(self, slot):
+        slot = str(slot)
         print("Saving Snapshot", slot)
         self.snapshots[slot] = {
             "targets": {tname: t.save() for tname, t in self.targets.items()},
@@ -232,6 +233,7 @@ class Interface(object):
 
     def load_snapshot(self, slot):
         print("Loading Snapshot", slot)
+        slot = str(slot)
         if slot not in self.snapshots:
             eprint("No snapshot in slot", slot)
             return
@@ -675,7 +677,7 @@ def load_snapshots(interface, filename):
 def save_snapshots(interface, filename, comment=None):
     with open(filename, "w") as outfile:
         interface.save_snapshot("recall")
-        json.dump(interface.snapshots, outfile, sort_keys=True)
+        json.dump(interface.snapshots, outfile)
         print("Saved snapshots to %s" % filename)
 
 
@@ -694,7 +696,7 @@ def save_profile(interface, filename, comment=None):
         profile = interface.make_profile()
         if comment:
             profile["comment"] = comment
-        json.dump(profile, outfile, sort_keys=True)
+        json.dump(profile, outfile)
         print("Saved profile to %s" % filename)
 
 

@@ -34,8 +34,10 @@ class Target(object):
     def from_dict(self, d):
         self.name = d["name"]
 
-    @classmethod
-    def blank(self, parent):
+    # @Robustness: Most of the overrides of this method are trivial, find
+    #              a way to have them happen automatically?
+    @staticmethod
+    def blank(parent):
         return Target("unnamed", parent)
 
     def is_connected_to_output(self, ID):
@@ -88,8 +90,8 @@ class PageFlip(Target):
         super().from_dict(d)
         self.device = self.parent.get_device(d["device"])
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return PageFlip("unnamed", parent, parent.input)
 
 
@@ -122,8 +124,8 @@ class SwitchView(Target):
         super(SwitchView, self).from_dict(d)
         self.view_name = d["view"]
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return SwitchView("unnamed", parent, "")
 
 
@@ -251,8 +253,8 @@ class Parameter(ValueTarget):
         self.value = d["value"]
         self.is_button = d["is_button"]
 
-    @classmethod
-    def blank(self, parent):
+    @staticmethod
+    def blank(parent):
         return Parameter("unnamed", parent, 1, 0)
 
     def is_connected_to_output(self, channel, cc):

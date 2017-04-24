@@ -737,7 +737,7 @@ if __name__ == "__main__":
     Call the function 'attributes' on an object to find out what attributes
     it carries. eg.: attributes(interface)
 
-    Exit using 'exit()'
+    Exit by hitting Ctrl+Z and then Enter.
             """)
 
 
@@ -747,7 +747,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
 
-    print("CLOSING UP SHOPT")
     save_snapshots(interface, snapshot_file)
 
     exit()

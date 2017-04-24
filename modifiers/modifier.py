@@ -132,6 +132,22 @@ class Modifier(object):
         """
         raise NotImplementedError
 
+    def save(self): 
+        """
+        """
+        return {
+            "_value": self._value,
+            "_amplitude": self._amplitude,
+            "targets": self.targets
+        }
+
+    def load(self, d):
+        """
+        """
+        self._value = d["_value"]
+        self._amplitude = d["_amplitude"]
+        self.targets = d["targets"]
+
     def __repr__(self):
         return type(self).__name__
 
@@ -159,3 +175,12 @@ class LFOSine(Modifier):
 
     def calculate(self, t):
         return (sin(t * self.frequency) + 1) * 0.5
+
+    def save(self):
+        d = super().save()
+        d["frequency"] = self.frequency
+        return d
+
+    def load(self, d):
+        super().load(d)
+        self.frequency = d["frequency"]

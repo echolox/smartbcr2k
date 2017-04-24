@@ -44,6 +44,21 @@ class Target(object):
     def is_connected_to(self, target):
         return False
 
+    def save(self):
+        """
+        Return a dictionary of attributes and values (similar to serialize),
+        however this is for creating snapshots. Only store those values you
+        need to recreate a certain state, not to recreate the object itself.
+        """
+        return {}
+
+    def load(self, d):
+        """
+        Set the target into the state encoded in the dictionary of attributes
+        and values.
+        """
+        pass
+
     def __repr__(self):
         return self.name
 
@@ -159,6 +174,18 @@ class ValueTarget(Target):
     @value.setter
     def value(self, v):
         self._value = v
+
+    def save(self):
+        # TODO: Annotate which attributes to save and load in Class list
+        return {
+            "_value": self._value,
+            "modifiers": self.modifiers,
+        }
+
+    def load(self, d):
+        super().load(d)
+        self._value = d["_value"]
+        self.modifiers = d["modifiers"]
 
 
 class Parameter(ValueTarget):

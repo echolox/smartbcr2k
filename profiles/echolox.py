@@ -190,6 +190,7 @@ def create(i):
         # Command Buttons:
         view.map_this(pageflip_button.ID, global_pageflip)
         view.configuration[pageflip_button.ID]["toggle"] = True
+        view.map_this(modview_button.ID, sview)
 
         i.views.append(view) 
         
@@ -229,6 +230,7 @@ def create(i):
         # Command Buttons:
         view.map_this(pageflip_button.ID, global_pageflip)
         view.configuration[pageflip_button.ID]["toggle"] = True
+        view.map_this(modview_button.ID, sview)
 
         i.views.append(view)
 

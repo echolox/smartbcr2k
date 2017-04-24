@@ -5,6 +5,7 @@ view with temporary targets, that allow the user to dial in a modulation power
 per Target.
 """
 from .target import Target, ValueTarget
+from devices.controls import Button
 from modifiers import Modifier
 
 View = None
@@ -67,7 +68,7 @@ class ModView(Target):
 
             for ID, targets in self.prev_view.map.items():
                 for target in targets:
-                    if isinstance(target, ValueTarget):
+                    if isinstance(target, ValueTarget) and not isinstance(self.parent.input.controls[ID], Button):
                         mp = ModPower("%s_%s_PWR" % (target, self.modifier), self.parent, self.modifier, target)
                         temp_view.map[ID].append(mp)
 

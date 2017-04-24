@@ -1,6 +1,6 @@
 from collections import defaultdict as ddict
 
-from util import FULL, clip, unify, dprint
+from util import FULL, clip, unify, dprint, iprint
 
 class Target(object):
     """
@@ -139,9 +139,22 @@ class ValueTarget(Target):
         except KeyError:
             pass
 
+    def assume_center_value(self, value):
+        """
+        Because of modifiers, the value reported by self.value
+        and on the hardware is not the same as self._value which
+        is the center value. In this case we'll only look at the
+        difference (how far the dial/slider was moved) and add
+        or subtract that from the center value self._value.
+        """
+        delta = value - self.value  # The new value - the modified value
+        self._value += delta        # Add directly to private variable
+                                    # to modify the center value
+
     @property
     def value(self):
-        return int(clip(self.minimum, self.maximum, self._value + sum(self.modifiers.values())))
+        return int(clip(self.minimum, self.maximum,
+                        self._value + sum(self.modifiers.values())))
 
     @value.setter
     def value(self, v):
@@ -174,12 +187,18 @@ class Parameter(ValueTarget):
         the transmitted value.
         """
         if value is not None:
-            if self.is_button:
-                if value:
-                    value = 127
-                else:
-                    value = 0
-            self.value = value
+            if self.modifiers:
+                # We want to modify the center value because the one
+                # displayed on the Dial is shifted by the modifiers
+                self.assume_center_value(value)
+            else:
+                # Convert anything that evaluates to True as 127
+                if self.is_button:
+                    if value:
+                        value = 127
+                    else:
+                        value = 0
+                self.value = value
         else:
             # Called without value, use own value
             pass

@@ -1,6 +1,6 @@
 from modifiers import LFOSine
 from interface import View
-from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView
+from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector
 from util import flatten, iprint
 
 comment = {
@@ -59,15 +59,20 @@ def create(i):
     pageflip_button = bcr.command_buttons[2]
 
 
+    # 0: Snapshot Selector
+    snpsel = SnapshotSelector("Snapshots", i)
+    snpset = SnapshotButton("SnapshotButton", i, snpsel)
+
     # 1: Flex Targets
-    macro_targets = [FlexParameter("Flex_%i" % (it + 1), i) for it in range(8)]
+    macro_targets = [snpsel] + [FlexParameter("Flex_%i" % (it + 1), i) for it in range(0, 7)]
     for macro, target in zip(bcr.macro_bank(0), macro_targets):
         init_view.map_this(macro.ID, target)
 
-    macro_setters = [FlexSetter("FlexSetter_%i" % (it + 1), i, flex)
+    macro_setters = [snpset] + [FlexSetter("FlexSetter_%i" % (it + 1), i, flex)
                                 for it, flex in enumerate(macro_targets)]
     for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
         init_view.map_this(mbutton.ID, target)
+        init_view.configuration[mbutton.ID]["toggle"] = False
 
     # Need 8 parameters to keep offset because I'm too lazy to remap in Ableton
     i.parameter_maker.skip(8)

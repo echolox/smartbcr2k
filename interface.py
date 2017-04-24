@@ -224,18 +224,23 @@ class Interface(object):
             return None
 
     def save_snapshot(self, slot):
+        print("Saving Snapshot", slot)
         self.snapshots[slot] = {
             "targets": {tname: t.save() for tname, t in self.targets.items()},
             "modifiers": {mod.name: mod.save() for mod in self.modifiers}
         }
 
     def load_snapshot(self, slot):
+        print("Loading Snapshot", slot)
         if slot not in self.snapshots:
             eprint("No snapshot in slot", slot)
             return
 
         for tname, state in self.snapshots[slot]["targets"].items():
-            self.targets[tname].load(state)            
+            try:
+                self.targets[tname].load(state)            
+            except KeyError:
+                eprint("Target", tname, "not available")
 
         for modname, state in self.snapshots[slot]["modifiers"].items():
             self.get_modifier(modname).load(state, self) 

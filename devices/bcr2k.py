@@ -1,11 +1,7 @@
 from rtmidi.midiutil import open_midioutput, open_midiinput
 
 from .controls import Dial, Button
-from .ports import Device, ccc2ID, ID2ccc
-
-# TODO: Figure out correct ports based on device names
-DEFAULT_IN_PORT = 3
-DEFAULT_OUT_PORT = 4
+from .ports import Device, ccc2ID, ID2ccc, open_port_by_name
 
 
 class BCR2k(Device):
@@ -35,8 +31,9 @@ class BCR2k(Device):
         super().__init__("BCR2k", *args, auto_start=False, **kwargs)
 
         # @Temp: Figure out the ports differently
-        self.output, self.outname = open_midioutput(DEFAULT_OUT_PORT)
-        self.input,  self.inname  = open_midiinput (DEFAULT_IN_PORT)
+        self.output, self.outname = open_midioutput(open_port_by_name("BCR", "output"))
+        self.input,  self.inname  = open_midiinput (open_port_by_name("BCR", "input"))
+        print(self.output)
 
         if auto_start:
             self.start()

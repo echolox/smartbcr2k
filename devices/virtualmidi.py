@@ -1,14 +1,13 @@
 from rtmidi.midiutil import open_midioutput, open_midiinput
 from devices import OutputPort
+from .ports import open_port_by_name
 
-DEFAULT_LOOP_IN = 9 
-DEFAULT_LOOP_OUT = 10 
 
 class VirtualMidi(OutputPort):
 
     def __init__(self, *args, **kwargs):
-        self.input,  self.inname  = open_midiinput (DEFAULT_LOOP_IN)
-        self.output, self.outname = open_midioutput(DEFAULT_LOOP_OUT)
+        self.input,  self.inname  = open_midiinput (open_port_by_name("ableton_to_i", "input"))
+        self.output, self.outname = open_midioutput(open_port_by_name("i_to_ableton", "output"))
         super().__init__("VirtualMidi", *args, **kwargs)
 
         self.ignore_daw = kwargs.get("ignore_daw", False)

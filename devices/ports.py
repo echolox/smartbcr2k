@@ -6,14 +6,40 @@ from threading import Thread
 
 import rtmidi
 from rtmidi.midiconstants import CONTROL_CHANGE
-from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports
+from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports, get_api_from_environment
 
-from util import FULL, clip, eprint, dprint, iprint
+from util import FULL, clip, eprint, dprint, iprint, eprint
 from util.threadshell import Shell, yield_thread
 
 from .controls import Dial, Button, ControlParent
 
 BLINK_INTERVAL = 0.3  # in seconds
+
+class PortNotFoundError(Exception):
+    pass
+
+
+def open_port_by_name(name, inout):
+    if inout == "input":
+        midiio = rtmidi.MidiIn(get_api_from_environment(rtmidi.API_UNSPECIFIED))
+    elif inout == "output":
+        midiio = rtmidi.MidiOut(get_api_from_environment(rtmidi.API_UNSPECIFIED))
+    else:
+        eprint("Call with either input or output as inout argument")
+        raise PortNotFoundError
+
+    ports = midiio.get_ports()
+    type_ = " input" if isinstance(midiio, rtmidi.MidiIn) else " ouput"
+
+    if ports:
+        for portno, pname in enumerate(ports):
+            if name.lower() in pname.lower():
+                return portno
+        raise PortNotFoundError
+    else:
+        print("No MIDI{} ports found.".format(type_))
+        raise PortNotFoundError
+
 
 def select_port(port_type="input"):
     """

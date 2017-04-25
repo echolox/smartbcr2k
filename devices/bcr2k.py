@@ -110,28 +110,3 @@ class BCR2k(Device):
             return super().control_on_active_page(control)
         else:
             return True
-
-if __name__ == "__main__":
-    from rtmidi.midiutil import list_input_ports, list_output_ports
-    from threadshell import Shell
-    from queue import Queue, Empty, Full
-
-    list_input_ports()
-    list_output_ports()
-    bcr = BCR2k(auto_start=False)
-    sbcr = Shell(bcr, bcr.update)
-
-    q = Queue()
-    sbcr.add_listener(q)
-
-    try:
-        while True:
-            try:
-                event, *data = q.get_nowait()
-                print(event.name, data)
-            except Empty:
-                pass
-    except KeyboardInterrupt:
-        pass
-
-    bcr.remove_listener(q)

@@ -1,166 +1,22 @@
 import os
 import time
-import rtmidi
 import json
-import sys
-import argparse
-import traceback
 
 from threading import Thread
 from queue import Queue, Empty, Full
 from importlib import import_module
 
-from copy import copy
-from enum import Enum
-from collections import namedtuple
-from collections import defaultdict as ddict
-
-from rtmidi.midiconstants import CONTROL_CHANGE
-
-from colorama import Fore, Back, Style, init
-init(autoreset=True)
+from colorama import Fore, Back, Style
 
 from util import keys_to_ints, unify, eprint, iprint
 from util.threadshell import Shell, yield_thread 
-from util.interactive import interact
 
-from targets import get_target, Parameter, SwitchView, ValueTarget
+from targets import get_target, ValueTarget
 from devices import DeviceEvent, BCR2k, VirtualMidi
 from modifiers import get_modifier
 
-
-class Exhausted(Exception):
-    pass
-
-
-class ParameterMaker(object):
-    """
-    Produces Targets of the type Parameter. Everytime a new target is
-    requested it assigns that target the next available CC.
-    """
-
-    # These CC values could cause problems when mapped to
-    forbidden = [123]
-
-    def __init__(self, interface, channel, prefix="CC", first_cc=1, expand=True):
-        self.interface = interface
-        self.channel = channel
-        self.next_cc = first_cc
-        self.prefix = prefix
-        self.expand = expand
-
-        self.exhausted = False
-
-    def make(self, is_button=False):
-        if self.exhausted:
-            raise Exhausted
-
-        name = "%s_%i" % (self.prefix, self.next_cc)
-        t = Parameter(name, self.interface, self.channel, self.next_cc, is_button=is_button)        
-
-        self.advance()
-
-        return t
-
-    def advance(self):
-        while True:
-            self.next_cc += 1
-            if self.next_cc not in self.forbidden:
-                break
-
-        if self.next_cc > 128:
-            if self.expand and self.channel < 16:
-                self.next_cc = 1
-                self.channel += 1
-            else:
-                self.exhausted = True
-
-    def skip(self, n):
-        """
-        Skips n cc values
-        """
-        for _ in range(n):
-            self.advance()
-
-
-class ViewMaker(object):
-
-    def __init__(self, interface, prefix="V"):
-        self.interface = interface
-        self.next_index = 1
-        self.prefix = prefix
-
-    def make(self, view=None):
-        name = "%s_%i" % (self.prefix, self.next_index)
-        if not view:
-            view = View(self.interface.input, name=name)
-        t = SwitchView(name, self.interface, view)
-        self.next_index += 1
-        return t, view
-
-
-class View(object):
-    """
-    A View is made up of two components:
-    - A configuration: How the buttons and dials on the input device should behave
-    - A Map: Connects the input device's controls (by their ID) to Targets like
-             Parameters, Commands etc. from which their current values can also
-             be infered.
-    When triggerivating a View, the input Device needs to be reconfigured and the
-    values of each mapped target transmitted to that device for it to show those
-    values on the hardware.
-    """
-    def __init__(self, device, name="Unnamed View"):
-        # WARNING! The device might be in a threadshell, therefore do not use any of its
-        #          methods. Just access attributes. Methods on those attributes are fine though.
-        self.name = name
-        # Map IDs of a device's controls to configurations:
-        # - Buttons: toggle vs momentary
-        self.configuration = {}
-        for ID, control in device.controls.items():
-            self.configuration[ID] = copy(control.default_conf)
-
-        # Map IDs of a device's controls to Targets
-        self.map = ddict(list)
-
-    def find_IDs_by_target(self, vtarget):
-        """
-        Make a list of IDs on this view mapped to the provided target.
-        """
-        IDs = []
-        for ID, vtargets in self.map.items():
-            for target in vtargets:
-                if target == vtarget or target.is_connected_to(vtarget):
-                    IDs.append(ID)
-        return IDs
-
-    def map_this(self, ID, t):
-        """
-        Add a mapping from the ID to the target
-        """
-        self.map[ID].append(t)
-
-    def unmap(self, ID):
-        """
-        Remove all mappings of the provided ID
-        """
-        self.map[ID] = []
-
-    def unmap_target(self, target):
-        """
-        Remove all mappings to the provided target
-        """
-        for targets in self.map.values():
-            if target in targets: targets.remove(target) 
-
-    def __eq__(self, other):
-        return self.name == other.name
-
-    def __repr__(self):
-        return self.name
-
-    def __str__(self):
-        return self.__repr__()
+from .makers import ParameterMaker, ViewMaker
+from .view import View
 
 
 class Interface(object):
@@ -461,6 +317,8 @@ class Interface(object):
                 # but only for those modified due to a user action on the
                 # input device ... which is exactly here.
                 # This only works for Value Targets
+                # @Robustness: Can we assure this without having to check
+                #              explicitely for ValueTarget?
                 if isinstance(target, ValueTarget) and real_value is not None:
                     modified_targets.add(target)
 
@@ -622,7 +480,7 @@ class Interface(object):
                 try:
                     func = self.device_event_dispatch[event]
                 except KeyError:
-                    print(self, "Cannot handle event of type", event, file=sys.stderr)
+                    eprint(self, "Cannot handle event of type", event)
                     continue
                 func(*data)
 
@@ -639,6 +497,7 @@ class Interface(object):
 
     def __str__(self):
         return self.__repr__()
+
 
 ##################################
 
@@ -663,7 +522,7 @@ def resolve_snapshots(name):
     Find a script in the profiles dir/package by name.
     """
     snapshots_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, SNAPSHOTS_EXT))
-    if not os.path.isfile(profile_file):
+    if not os.path.isfile(snapshots_file):
         raise FileNotFoundError
     return snapshots_file
 
@@ -698,62 +557,3 @@ def save_profile(interface, filename, comment=None):
             profile["comment"] = comment
         json.dump(profile, outfile)
         print("Saved profile to %s" % filename)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run the commandline interface')
-    parser.add_argument('profile', help='A profile to load')
-    parser.add_argument('-i', '--interactive', dest='interactive', action='store_true',
-                        help="Drop into the interactive Python console when running.")
-    args = parser.parse_args()
-
-    bcr = BCR2k(auto_start=False)
-    loop = VirtualMidi(auto_start=False)
-    print("Devices started")
-
-    interface = Interface(bcr, loop)
-    print("Interface started")
-
-    profile_file = resolve_profile(args.profile)
-    snapshot_file = resolve_snapshots(args.profile)
-    load_profile(interface, profile_file)
-    try:
-        load_snapshots(interface, snapshot_file)
-    except FileNotFoundError:
-        print("No snapshots available")
-
-    try:
-        if args.interactive:
-            from rtmidi.midiutil import list_output_ports, list_input_ports
-
-            def test_mod():
-                ID = 862
-                from modifiers import LFOSine
-                s = LFOSine(frequency=0.5)
-                interface.add_modifier(s)
-                s.target(interface.view.map[862][0])
-
-            interact(local=locals(), banner="""
-    The Interface is now running and you've been dropped into Python's
-    interactive console. The following objects are available:
-
-    interface: The Interface making your Midi Controller smart
-    bcr:       Your BCR 2000 Midi Controller
-    loop:      The Midi Port that leads to your DAW
-
-    Call the function 'attributes' on an object to find out what attributes
-    it carries. eg.: attributes(interface)
-
-    Exit by hitting Ctrl+Z and then Enter.
-            """)
-
-
-        else:  # non-interactive mode
-            while True:
-                yield_thread()
-    except KeyboardInterrupt:
-        pass
-
-    save_snapshots(interface, snapshot_file)
-
-    exit()

@@ -1,5 +1,5 @@
 from modifiers import LFOSine
-from interface import View
+from smci import View
 from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector
 from util import flatten, iprint
 

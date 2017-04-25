@@ -5,10 +5,9 @@ view with temporary targets, that allow the user to dial in a modulation power
 per Target.
 """
 from .target import Target, ValueTarget
+from smci.view import View
 from devices.controls import Button
 from modifiers import Modifier
-
-View = None
 
 class ModPower(ValueTarget):
     
@@ -58,14 +57,7 @@ class ModView(Target):
         if value is 127:
             self.prev_view = self.parent.view
 
-            # Deferred import
-            global View
-            if View is None:
-                import interface
-                View = interface.View
-
             temp_view = View(self.parent.input, name="%s_ModView" % self.modifier)
-
 
             for ID, targets in self.prev_view.map.items():
                 for target in targets:
@@ -100,4 +92,3 @@ class ModView(Target):
     @staticmethod
     def blank(parent):
         return ModView("unnamed", parent, None)
-

@@ -30,10 +30,8 @@ class BCR2k(Device):
 
         super().__init__("BCR2k", *args, auto_start=False, **kwargs)
 
-        # @Temp: Figure out the ports differently
         self.output, self.outname = open_midioutput(open_port_by_name("BCR", "output"))
         self.input,  self.inname  = open_midiinput (open_port_by_name("BCR", "input"))
-        print(self.output)
 
         if auto_start:
             self.start()

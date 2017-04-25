@@ -13,7 +13,7 @@ import importlib
 import os.path
 
 from devices import BCR2k, VirtualMidi
-from interface import Interface, save_profile, PROFILES_DIR, PROFILES_EXT
+from smci.interface import Interface, save_profile, PROFILES_DIR, PROFILES_EXT
 from util import eprint
 
 

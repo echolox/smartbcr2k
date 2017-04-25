@@ -45,13 +45,14 @@ SMCI -+                    +-- DAW
 In Ableton Live it would look like this. Notice how we don't directly connect to the BCR2000 ports:
 ![Ableton Live Midi Screenshot](https://cloud.githubusercontent.com/assets/10747793/25379343/fceb28a8-29ac-11e7-8082-0958e5a531c3.png)
 
+You will also need to dedicate at least one page on your BCR2k (used here as an example) to the SMCI. Map all your controls in this order: Macro Dials, Macro Dial Buttons, Buttons, Main Dials, Bottom Right Buttons, starting with CC1 und Channel 7 (eventually 1, my config is a little old). The last Button on the very bottom right should end up with CC 108. See the [definition of the BCR2k](devices/bcr2k.py) device for further details.
 
 Now you should be able to start the main script. I'm providing my own profile that has a bunch of features already configured. Just start it by running
 ```
 python main.py echolox -i
 ```
 `echolox` is the name of the profile to be loaded. It refers to a `echolox.bcr` file in the profiles directory.
-The `-i` flag drops us into interactive mode. This is useful if you want to do some scripting wihle the unit and the SMCI are running, possibly even connected to the DAW. Remember: Because this script sits between your controller and the DAW it is possible to stop, start, dis- and reconnect controllers and develop new features without ever closing your DAW.
+The `-i` flag drops us into interactive mode. This is useful if you want to do some scripting while the unit and the SMCI are running, possibly even connected to the DAW. Remember: Because this script sits between your controller and the DAW it is possible to stop, start, dis- and reconnect controllers and develop new features without ever closing your DAW.
 Exit using `CTRL+Z then Enter`.
 
 

@@ -3,10 +3,12 @@
 ## You want to have a smarter midi controller
 
 The aim of this project is to create a framework to augment any Midi controllers with more intelligent features like:
+- Simulate more controls than the device actually has
 - Different behavior and functionality of controls (buttons, dials, etc.) based on Views/Pages
-- Save and load snapshots of the current values
 - Automation of values (think of LFOs on Control Changes before we even hit the DAW)
-- Dynamic mapping of controls
+- Save and load snapshots of the current values
+- Mapping controls to behave like other controls to create Macros
+
 
 The only requirements for a Midi controller for all of this to work are:
 - Has to allow Control Changes to be sent to the unit for visual feedback (LEDs, motorized faders etc.)

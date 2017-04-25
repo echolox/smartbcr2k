@@ -22,8 +22,10 @@ class PortNotFoundError(Exception):
 def open_port_by_name(name, inout):
     if inout == "input":
         midiio = rtmidi.MidiIn(get_api_from_environment(rtmidi.API_UNSPECIFIED))
+        open_func = open_midiinput
     elif inout == "output":
         midiio = rtmidi.MidiOut(get_api_from_environment(rtmidi.API_UNSPECIFIED))
+        open_func = open_midioutput
     else:
         eprint("Call with either input or output as inout argument")
         raise PortNotFoundError
@@ -34,7 +36,7 @@ def open_port_by_name(name, inout):
     if ports:
         for portno, pname in enumerate(ports):
             if name.lower() in pname.lower():
-                return portno
+                return open_func(portno)
         raise PortNotFoundError
     else:
         print("No MIDI{} ports found.".format(type_))

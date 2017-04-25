@@ -5,9 +5,9 @@ from .controls import Dial, Button
 class BCR2k(Device):
     """
     An implementation of the Behringer BCR 2000 Midi Controller. Configure your hardware like so:
-    - Set all controls to CC on channel 1 (eventually, right now 7 because my config is stupid and old)
+    - Set all controls to CC on channel 7 (eventually to 1, right now 7 because my config is stupid and old)
     - From the top left down to the bottom right, configure your Dials and Buttons to send out
-      CC values starting with 0 (eventually, right now 1 because my config is stupid and old)
+      CC values starting with 1
     - Set all buttons to momentary
     - Set all value ranges from 0 to 127
     """

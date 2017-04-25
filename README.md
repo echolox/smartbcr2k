@@ -16,8 +16,10 @@ The only requirements for a Midi controller for all of this to work are:
 
 Prime examples would be Behringer's BCR 2000 and BCF 2000\*.
 
-
 \* not tested yet with the BCF but its functionality seems identical to the BCR
+
+#### Here's a quick video demo: >> https://www.youtube.com/watch?v=NkC_V2LblDI <<
+
 
 ## How does it work?
 

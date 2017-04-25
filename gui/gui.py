@@ -1,3 +1,8 @@
+"""
+GUI DEVELOPMENT DISCONTINUED AT THE MOMENT
+
+Feel free to work on a GUI for this script if you'd find it useful.
+"""
 import sys
 import time
 import itertools

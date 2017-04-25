@@ -27,9 +27,12 @@ class ShellResult(Queue):
 
 class ShellCall(object):
     """
-    Wraps a bound method.  When the wrapped method is called,
+    Wraps a bound method. When the wrapped method is called,
     the bound method and args and kwargs are placed on the queue
     to be consumed inside the shell's main_loop.
+
+    If you want to use the result of the Call, you will need to call
+    get() on it. Effectively this behaves like a Future.
     """
     def __init__(self, method, queue):
         self._m = method
@@ -43,7 +46,7 @@ class ShellCall(object):
 
 class Shell(object):
     """
-    Wraps an object for thread safe method calls via a Queue In The Shell (tm)
+    Wraps an object for thread asynchronous calls via a Queue In The Shell (tm)
     """
 
     _internals = ["_internals", "_o", "_q", "_u", "_running", "_thread", "_start", "_main_loop", "_stop"]

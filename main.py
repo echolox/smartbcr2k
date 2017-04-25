@@ -10,7 +10,10 @@ from util.interactive import interact
 
 
 parser = argparse.ArgumentParser(description='Run the commandline interface')
-parser.add_argument('profile', help='A profile to load')
+parser.add_argument('profile', help="""The name of a profile to load. Example:
+                                       'python main.py myprofile' to load the profile
+                                       located at %s/myprofile.bcr
+                                    """ % PROFILES_DIR)
 parser.add_argument('-i', '--interactive', dest='interactive', action='store_true',
                     help="Drop into the interactive Python console when running.")
 args = parser.parse_args()

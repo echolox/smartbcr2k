@@ -1,4 +1,4 @@
-from math import sin, pi
+from math import sin, cos, pi
 
 from .modifier import Modifier
 
@@ -42,10 +42,10 @@ class Sine(Basic):
     
     def calculate(self, t):
         if self.positive:
-            return (self.wave(t - pi / 2) + 1) / 2
+            return (self.wave(sin, t) + 1) / 2
         else:
-            return  self.wave(t) / 2  # Dampen amplitude
+            return  self.wave(lambda x: -cos(x), t) / 2  # Dampen amplitude
 
-    def wave(self, t):
-        return sin(t * 2 * pi * self.frequency)
+    def wave(self, func, t):
+        return func(t * 2 * pi * self.frequency)
 

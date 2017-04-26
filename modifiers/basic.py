@@ -1,4 +1,5 @@
 from math import sin, cos, pi
+from random import random
 
 from .modifier import Modifier
 
@@ -46,15 +47,16 @@ class Basic(Modifier):
         """
         raise NotImplementedError
 
+
 class Sine(Basic):
     
     def wave(self, t):
         if self.positive:
-            return (sin(self.sync(t)) + 1) / 2
+            return (sin(self.period(t)) + 1) / 2
         else:
-            return -cos(self.sync(t))
+            return -cos(self.period(t))
 
-    def sync(self, t):
+    def period(self, t):
         return t * 2 * pi * self.frequency
 
 
@@ -91,3 +93,23 @@ class Square(Basic):
             return int(t < 0.25 or t > 0.75)
         else:
             return int(t < 0.5) * 2 - 1
+
+
+class SampledRandom(Basic):
+
+    last_t = 0
+    current_value = 0
+    
+    def wave(self, t):
+
+        # While t doesn't go from 0 to 1 yet
+        t = t - int(t)
+
+        if t <= self.last_t:
+            if self.positive:
+                self.current_value = random()
+            else:
+                self.current_value = random() * 2 - 1
+
+        self.last_t = t
+        return self.current_value

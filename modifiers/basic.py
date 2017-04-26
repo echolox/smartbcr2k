@@ -36,16 +36,21 @@ class Basic(Modifier):
 
 
 class Sine(Basic):
-    """
-    A sine wave, moving from -1 to 1
-    """
     
     def calculate(self, t):
         if self.positive:
-            return (self.wave(sin, t) + 1) / 2
+            return (sin(self.sync(t)) + 1) / 2
         else:
-            return  self.wave(lambda x: -cos(x), t) / 2  # Dampen amplitude
+            return -cos(self.sync(t)) / 2  # Dampen amplitude
 
-    def wave(self, func, t):
-        return func(t * 2 * pi * self.frequency)
+    def sync(self, t):
+        return t * 2 * pi * self.frequency
 
+
+class Saw(Basic):
+    
+    def calculate(self, t):
+        if self.positive:
+            return t
+        else:
+            return t * 2 - 1

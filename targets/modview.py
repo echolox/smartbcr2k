@@ -4,10 +4,17 @@ present in the currently active view. It does so by constructing a temporary
 view with temporary targets, that allow the user to dial in a modulation power
 per Target.
 """
+from time import time
+
 from .target import Target, ValueTarget
 from smci.view import View
 from devices.controls import Button
 from modifiers import Modifier
+
+import traceback
+
+
+LONGPRESS_TIME = 0.5  # in seconds
 
 class ModPower(ValueTarget):
     
@@ -50,6 +57,10 @@ class ModView(Target):
         self.prev_view = None
         self.deferred = None
 
+        self.value = 0
+        self.time_pressed = None
+        self.in_config_view = False
+
     def trigger(self, sender, value=None):
         """
         Switch to the mod_config_view or mod_power_view based on how long the button
@@ -61,16 +72,30 @@ class ModView(Target):
         super().trigger(sender, value)
 
         # Longpress/Shortpres logic
-        if value is 127:
-            self.prev_view = self.parent.view
-            self.mod_power_view()
+        if value == 127:
+            self.value = 127
+            if not self.in_config_view:
+                self.time_pressed = time()
+                self.prev_view = self.parent.view
+                self.mod_power_view()
+
         elif value is 0:
-            self.go_back()
+            self.value = 0
+            if not self.in_config_view:
+                if self.time_pressed and (time() - self.time_pressed) <= LONGPRESS_TIME:
+                    self.mod_config_view()
+                else:
+                    self.go_back()
+            else:
+                self.go_back()
+
     
     def go_back(self):
         """
         Go back to the view that was shown before switching to the mod views.
         """
+        self.time_pressed = None
+        self.in_config_view = False
         self.parent.switch_to_view(self.prev_view)
 
     def mod_config_view(self):
@@ -78,7 +103,9 @@ class ModView(Target):
         Constructs and shows a view that let's the user configure the modifier attributes
         itself (amplitude, frequeny ...) with a display of the waveform.
         """
-        pass
+        self.time_pressed = None
+        self.in_config_view = True
+        print("IN CONFIG VIEW")
 
     def mod_power_view(self):
         """
@@ -95,6 +122,7 @@ class ModView(Target):
 
         ID = next(filter(lambda kv: self in kv[1], self.prev_view.map.items()))[0]
         temp_view.map[ID].append(self)
+        temp_view.configuration[ID]["toggle"] = False
         self.parent.switch_to_view(temp_view, temp=True)
 
     def serialize(self, *args, **kwargs):

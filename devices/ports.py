@@ -318,6 +318,8 @@ class Device(Port):
         # value being set than what we are trying to set here (think min/max-values or
         # ignoring button presses to simulate toggle behaviour).
         real_value = control.set_value(value, force=force)
+
+#        iprint(ID == 873, self, value, real_value)
         # Therefore we get the real_value reported back from the control which we can
         # then reflect on the input device. If None was returned, the control wants us
         # to ignore it
@@ -361,6 +363,9 @@ class Device(Port):
         Can also be called by controls directly (due to subclassing from Controlparent) in
         case there is some logic making Controls change their value on their own.
         """
+
+
+
         for listener in self.listener_qs:
             try:
                 listener.put_nowait((DeviceEvent.CC, self, ID, value))

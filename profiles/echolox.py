@@ -47,6 +47,7 @@ def create(i):
     i.add_modifier(s)
     modview_button = bcr.command_buttons[0]
     i.view.map_this(modview_button.ID, sview)
+    i.view.configuration[modview_button.ID]["toggle"] = False
 
 
     ### MACRO BANKS ###
@@ -69,7 +70,7 @@ def create(i):
         init_view.map_this(macro.ID, target)
 
     macro_setters = [snpset] + [FlexSetter("FlexSetter_%i" % (it + 1), i, flex)
-                                for it, flex in enumerate(macro_targets)]
+                                for it, flex in enumerate(macro_targets[1:], start=1)]
     for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
         init_view.map_this(mbutton.ID, target)
         init_view.configuration[mbutton.ID]["toggle"] = False
@@ -142,6 +143,7 @@ def create(i):
             view.map_this(dial.ID, target)
         for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
             view.map_this(mbutton.ID, target)
+            view.configuration[mbutton.ID]["toggle"] = False
 
         fx_onoff = []
         it = 1

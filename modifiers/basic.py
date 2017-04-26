@@ -1,4 +1,4 @@
-from math import sin
+from math import sin, pi
 
 from .modifier import Modifier
 
@@ -7,7 +7,7 @@ class Basic(Modifier):
     A basic modulator that just needs a frequency to operate.
     """
 
-    def __init__(self, frequency=0.2, **kwargs):
+    def __init__(self, frequency=0.25, **kwargs):
         super().__init__(**kwargs)
         self.frequency = frequency
         self.positive = False
@@ -34,21 +34,18 @@ class Basic(Modifier):
         self.frequency = d["frequency"]
         self.positive = d["positive"]
 
-    def calculate(self, t):
-        if self.positive:
-            return (self.wave(t) + 1) / 2
-        else:
-            return  self.wave(t) / 2  # Dampen amplitude
-
-    def wave(self, t):
-        raise NotImplementedError
-
 
 class Sine(Basic):
     """
     A sine wave, moving from -1 to 1
     """
     
+    def calculate(self, t):
+        if self.positive:
+            return (self.wave(t - pi / 2) + 1) / 2
+        else:
+            return  self.wave(t) / 2  # Dampen amplitude
+
     def wave(self, t):
-        return sin(t * self.frequency)
+        return sin(t * 2 * pi * self.frequency)
 

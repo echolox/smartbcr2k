@@ -9,6 +9,15 @@ from util import FULL, eprint, dprint, iprint
 MIN_MOD = 0
 MAX_MOD = 127
 
+def bpmsync(bpm, length):
+    """
+    Turns a BPM value and a length given in beats into a
+    frequency usable by a modifier.
+    """
+    frequency = 60.0 / bpm / length
+    print(frequency)
+    return frequency
+
 counter = 0
 def modname_gen(modifier):
     global counter

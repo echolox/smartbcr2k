@@ -26,9 +26,10 @@ interface = Interface(bcr, loop)
 print("Interface started")
 
 profile_file = resolve_profile(args.profile)
-snapshot_file = resolve_snapshots(args.profile)
 load_profile(interface, profile_file)
+
 try:
+    snapshot_file = resolve_snapshots(args.profile)
     load_snapshots(interface, snapshot_file)
 except FileNotFoundError:
     print("No snapshots available")

@@ -30,7 +30,7 @@ class Basic(Modifier):
         self.frequency = d["frequency"]
 
 
-class LFOSine(Basic):
+class PositiveSine(Basic):
     """
     A positive sine, moving from 0 to 1 * amplitude
     """

@@ -10,32 +10,45 @@ class Basic(Modifier):
     def __init__(self, frequency=0.2, **kwargs):
         super().__init__(**kwargs)
         self.frequency = frequency
+        self.positive = False
 
     def serialize(self):
         m = super().serialize()
         m["frequency"] = self.frequency
+        m["positive"] = self.positive
         return m
 
     def from_dict(self, m, *args, **kwargs):
         super().from_dict(m, *args, **kwargs)
         self.frequency = m["frequency"]
+        self.positive = m["positive"]
 
     def save(self):
         d = super().save()
         d["frequency"] = self.frequency
+        d["positive"] = self.positive
         return d
 
     def load(self, d, i):
         super().load(d, i)
         self.frequency = d["frequency"]
+        self.positive = d["positive"]
+
+    def calculate(self, t):
+        if self.positive:
+            return (self.wave(t) + 1) / 2
+        else:
+            return  self.wave(t) / 2  # Dampen amplitude
+
+    def wave(self, t):
+        raise NotImplementedError
 
 
-class PositiveSine(Basic):
+class Sine(Basic):
     """
-    A positive sine, moving from 0 to 1 * amplitude
+    A sine wave, moving from -1 to 1
     """
     
-    def calculate(self, t):
-        return (sin(t * self.frequency) + 1) * 0.5
-
+    def wave(self, t):
+        return sin(t * self.frequency)
 

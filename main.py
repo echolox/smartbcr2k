@@ -38,13 +38,6 @@ try:
     if args.interactive:
         from rtmidi.midiutil import list_output_ports, list_input_ports
 
-        def test_mod():
-            ID = 862
-            from modifiers import LFOSine
-            s = LFOSine(frequency=0.5)
-            interface.add_modifier(s)
-            s.target(interface.view.map[862][0])
-
         interact(local=locals(), banner="""
 The Interface is now running and you've been dropped into Python's
 interactive console. The following objects are available:

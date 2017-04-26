@@ -34,14 +34,25 @@ class Basic(Modifier):
         self.frequency = d["frequency"]
         self.positive = d["positive"]
 
+    def calculate(self, t):
+        # Dampen the amplitude of "centered" waves by 0.5
+        return self.wave(t) * (1 + int(self.positive)) / 2
+
+    def wave(self, t):
+        """
+        Implement in such a way that:
+        self.positive == True ---> [ 0, 1], wave(0) = 0
+        self.positive == Fales --> [-1, 1], wave(0) = 0
+        """
+        raise NotImplementedError
 
 class Sine(Basic):
     
-    def calculate(self, t):
+    def wave(self, t):
         if self.positive:
             return (sin(self.sync(t)) + 1) / 2
         else:
-            return -cos(self.sync(t)) / 2  # Dampen amplitude
+            return -cos(self.sync(t))
 
     def sync(self, t):
         return t * 2 * pi * self.frequency
@@ -49,8 +60,34 @@ class Sine(Basic):
 
 class Saw(Basic):
     
-    def calculate(self, t):
+    def wave(self, t):
         if self.positive:
             return t
         else:
             return t * 2 - 1
+
+
+class Triangle(Basic):
+    
+    def wave(self, t):
+        if self.positive:
+            if t < 0.5:
+                return 2 * t
+            else:
+                return 2 - 2 * t
+        else:
+            if t < 0.25:
+                return t * 4
+            elif t < 0.75:
+                return 1 - 4(t - 0.25)
+            else:
+                return 4 * (t - 0.75) - 1
+
+
+class Square(Basic):
+    
+    def wave(self, t):
+        if self.positive:
+            return int(t < 0.25 or t > 0.75)
+        else:
+            return int(t < 0.5) * 2 - 1

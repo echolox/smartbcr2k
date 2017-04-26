@@ -29,10 +29,11 @@ for one cycle of the waveform.
 For musically synced frequencies, calculate the frequency to set using the bpm_syn
 function which receives the bpm and the number of quarter notes per cycle.
 """
+from collections import namedtuple
 from math import sin, cos, pi
 from random import random
 
-from .modifier import Modifier
+from .modifier import Modifier, AttributeDescriptor, AttributeType
 
 
 def bpm_sync(bpm, quarter_notes):
@@ -54,6 +55,14 @@ class Basic(Modifier):
     :param positive: centered mode vs positive mode (see module docstring)
     :param offset: time offset of the cycle 
     """
+
+    attribute_configs = (
+        AttributeDescriptor("frequency", 0.01, 10, float, AttributeType.span),
+        AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean),
+        AttributeDescriptor("offset", -0.5, 0.5, float, AttributeType.span),
+        AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span),
+    )
+
     def __init__(self, frequency=0.25, positive=False, offset=0, **kwargs):
         super().__init__(**kwargs)
         self.frequency = frequency

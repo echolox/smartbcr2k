@@ -4,12 +4,13 @@ present in the currently active view. It does so by constructing a temporary
 view with temporary targets, that allow the user to dial in a modulation power
 per Target.
 """
+from collections import namedtuple
 from time import time
 
 from .target import Target, ValueTarget
 from smci.view import View
 from devices.controls import Button
-from modifiers import Modifier
+from modifiers import Modifier, AttributeType
 
 import traceback
 
@@ -40,6 +41,39 @@ class ModPower(ValueTarget):
     # Doesn't need a blank because they never live to be saved into a profile
 
 
+class ModConfig(ValueTarget):
+    """
+    Maps an attribute of a Modifier to a Target, making it adjustable on the controller.
+    The attribute has to be provided in an AttributeDescriptor.
+    """
+    def __init__(self, name, parent, modifier, attribute_descriptor):
+        self.modifier = modifier
+        self.attribute = attribute_descriptor
+
+        initial = self.map_to_control(getattr(modifier, attribute_descriptor.name))
+        super().__init__(name, parent, initial)
+
+    def map_to_control(self, value):
+        return int((value - self.attribute.min) / (self.attribute.max - self.attribute.min) * 127)
+
+    def map_from_control(self, value):
+        return self.attribute.cast(value * (self.attribute.max - self.attribute.min) / 127.0 + self.attribute.min)
+
+    def trigger(self, sender, value=None):
+        """
+        Set the attribute linked to the modifier
+        :param sender: 
+        :param value: 
+        :return: 
+        """
+        real_value = super().trigger(sender, value=value)
+        corrected_value = self.map_from_control(value)
+        print("Setting %s to" % self.attribute.name, corrected_value)
+        setattr(self.modifier, self.attribute.name, corrected_value)
+
+        return real_value
+
+
 class ModView(Target):
     """
     If the button is held:
@@ -51,8 +85,8 @@ class ModView(Target):
 
     trigger_vals = [0, 127]
 
-    def __init__(self, name, parent, modifier, **kwargs):
-        super().__init__(name, parent, **kwargs)
+    def __init__(self, name, parent, modifier):
+        super().__init__(name, parent)
         self.modifier = modifier
         self.prev_view = None
         self.deferred = None
@@ -104,6 +138,23 @@ class ModView(Target):
         """
         self.time_pressed = None
         self.in_config_view = True
+
+        temp_view = View(self.parent.input, name="%s_ModConfigView" % self.modifier)
+
+        # TODO: Replace hardcoded dials with a definition of "universal dials" on the Device/Profile
+        type_IDs = {AttributeType.boolean: iter([841, 842, 843, 844]),
+                    AttributeType.span: iter([849, 850, 851, 852])
+                   }
+
+        for attribute_descriptor in self.modifier.attribute_configs:
+            ID = next(type_IDs[attribute_descriptor.type])
+            temp_view.map_this(ID, ModConfig(attribute_descriptor.name, self.parent, self.modifier, attribute_descriptor))
+
+        ID = next(filter(lambda kv: self in kv[1], self.prev_view.map.items()))[0]
+        temp_view.map_this(ID, self)
+        temp_view.configuration[ID]["toggle"] = False
+        self.parent.switch_to_view(temp_view, temp=True)
+
         print("IN CONFIG VIEW")
 
     def mod_power_view(self):

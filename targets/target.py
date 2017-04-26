@@ -74,8 +74,8 @@ class ValueTarget(Target):
     modifiable without having to know much about modifiers (see modifiers.py)
     """
     
-    def __init__(self, name, parent, initial=0, minimum=0, maximum=FULL, **kwargs):
-        super().__init__(name, parent, **kwargs)
+    def __init__(self, name, parent, initial=0, minimum=0, maximum=FULL):
+        super().__init__(name, parent)
         self._value = initial  # This is the 'center' value
         self.minimum = minimum
         self.maximum = maximum
@@ -120,8 +120,8 @@ class ValueTarget(Target):
                         self._value + sum(self.modifiers.values())))
 
     @value.setter
-    def value(self, v):
-        self._value = v
+    def value(self, value):
+        self._value = value
 
     def save(self):
         # TODO: Annotate which attributes to save and load in Class list

@@ -1,4 +1,6 @@
 from collections import defaultdict as ddict
+from collections import namedtuple
+from enum import Enum
 
 from util import eprint, clip
 
@@ -13,6 +15,12 @@ def modname_gen(modifier):
     counter += 1
     return "%s_%i" % (type(modifier).__name__, counter)
 
+class AttributeType(Enum):
+    boolean = 0
+    span = 1
+
+AttributeDescriptor = namedtuple("AttributeDescriptor", ["name", "min", "max", "cast", "type"])
+
 
 class Modifier(object):
     """
@@ -22,6 +30,9 @@ class Modifier(object):
     To create a new modifier, subclass this Class and override the
     method calculate.
     """
+    attribute_configs = (
+        AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span),
+    )
 
     def __init__(self, name=None, amplitude=MAX_MOD):
         if name is None:

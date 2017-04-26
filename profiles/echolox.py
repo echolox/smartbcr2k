@@ -43,7 +43,7 @@ comment = {
 def create(i):
     bcr = i.input._o
 
-    s = Sine(frequency=bpmsync(120, 2))
+    s = Saw(frequency=bpmsync(180, 4))
     sview = ModView("LFOSine_ModView", i, s)
     i.add_modifier(s)
     modview_button = bcr.command_buttons[0]

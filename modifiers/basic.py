@@ -36,6 +36,9 @@ class Basic(Modifier):
         self.positive = d["positive"]
 
     def calculate(self, t):
+        # TODO: Sync to midi clock
+        t *= self.frequency
+
         # Dampen the amplitude of "centered" waves by 0.5
         return self.wave(t) * (1 + int(self.positive)) / 2
 
@@ -57,7 +60,7 @@ class Sine(Basic):
             return -cos(self.period(t))
 
     def period(self, t):
-        return t * 2 * pi * self.frequency
+        return t * 2 * pi
 
 
 class Saw(Basic):
@@ -101,9 +104,6 @@ class SampledRandom(Basic):
     current_value = 0
     
     def wave(self, t):
-
-        # While t doesn't go from 0 to 1 yet
-        t = t - int(t)
 
         if t <= self.last_t:
             if self.positive:

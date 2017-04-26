@@ -14,7 +14,7 @@ def bpmsync(bpm, length):
     Turns a BPM value and a length given in beats into a
     frequency usable by a modifier.
     """
-    frequency = 60.0 / bpm / length
+    frequency = bpm / 60.0 / length
     print(frequency)
     return frequency
 

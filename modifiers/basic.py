@@ -1,7 +1,47 @@
+"""
+Basic modifiers are the typical LFOs you'd find in the audio world: Sine, Saw, Square,
+Triangle, Random. Their frequency can be set freely in Hz.
+
+To unify their definition they all work on the same domain, but two different codomains
+based on if the flag "positive" is set:
+
+  let f be the function of the modifier:
+
+  for positive = False:   f: [0, 1] -> [-1, 1]
+  for positive = True:    f: [0, 1] -> [ 0, 1]
+  with f(0) = 0 in both cases.
+
+  If f yields 0, the target value is not modified at all.
+  If f yields 1, the target value is modified to the full effect (which itself is a
+                 function of Modifier._amplitude and the per-Target power. See the
+                 definition of Modifier for that).
+
+When a ValueTarget is being modified by a centered modifier (positive = False),
+the modifier will let the modulated value oscillate around the ValueTargets 
+value (center position).
+With positive = True it will take the ValueTarget's value as the starting point
+and modulate that value in one direction only, depending on if the power is a
+positive or negative value.
+
+The Basic base class takes care of preparing the provided time value t to sync up
+with the modifiers frequency. It transforms the value to always move from 0 to 1
+for one cycle of the waveform.
+For musically synced frequencies, calculate the frequency to set using the bpmsync
+function which receives the bpm and the number of quarter notes per cycle.
+"""
 from math import sin, cos, pi
 from random import random
 
 from .modifier import Modifier
+
+
+def bpmsync(bpm, quarter_notes):
+    """
+    Turns a BPM value and a length given in beats into a
+    frequency usable by a modifier.
+    """
+    return bpm / 60.0 / quarter_notes
+
 
 class Basic(Modifier):
     """
@@ -40,7 +80,12 @@ class Basic(Modifier):
         t *= self.frequency
 
         # Dampen the amplitude of "centered" waves by 0.5
-        return self.wave(t) * (1 + int(self.positive)) / 2
+        # That way, setting the power of modulation in ModView
+        # the set range equates directly to the range of oscillation
+        # However, it would't allow full range modulation in centered
+        # mode. It feels better, but makes the centered mode less useful.
+        # * (1 + int(self.positive)) / 2
+        return self.wave(t)
 
     def wave(self, t):
         """
@@ -104,7 +149,6 @@ class SampledRandom(Basic):
     current_value = 0
     
     def wave(self, t):
-
         if t <= self.last_t:
             if self.positive:
                 self.current_value = random()

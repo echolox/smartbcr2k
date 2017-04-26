@@ -78,8 +78,7 @@ class ModView(Target):
                 self.time_pressed = time()
                 self.prev_view = self.parent.view
                 self.mod_power_view()
-
-        elif value is 0:
+        elif value is 0:  # Ignore False, actually check for 0 (thanks Python)
             self.value = 0
             if not self.in_config_view:
                 if self.time_pressed and (time() - self.time_pressed) <= LONGPRESS_TIME:

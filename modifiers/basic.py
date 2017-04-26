@@ -26,7 +26,7 @@ positive or negative value.
 The Basic base class takes care of preparing the provided time value t to sync up
 with the modifiers frequency. It transforms the value to always move from 0 to 1
 for one cycle of the waveform.
-For musically synced frequencies, calculate the frequency to set using the bpmsync
+For musically synced frequencies, calculate the frequency to set using the bpm_syn
 function which receives the bpm and the number of quarter notes per cycle.
 """
 from math import sin, cos, pi
@@ -35,7 +35,7 @@ from random import random
 from .modifier import Modifier
 
 
-def bpmsync(bpm, quarter_notes):
+def bpm_sync(bpm, quarter_notes):
     """
     Turns a BPM value and a length given in beats into a
     frequency usable by a modifier.
@@ -91,7 +91,7 @@ class Basic(Modifier):
         """
         Implement in such a way that:
         self.positive == True ---> [ 0, 1], wave(0) = 0
-        self.positive == Fales --> [-1, 1], wave(0) = 0
+        self.positive == False --> [-1, 1], wave(0) = 0
         """
         raise NotImplementedError
 
@@ -104,7 +104,8 @@ class Sine(Basic):
         else:
             return -cos(self.period(t))
 
-    def period(self, t):
+    @staticmethod
+    def period(t):
         return t * 2 * pi
 
 
@@ -129,7 +130,7 @@ class Triangle(Basic):
             if t < 0.25:
                 return t * 4
             elif t < 0.75:
-                return 1 - 4(t - 0.25)
+                return 1 - 4 * (t - 0.25)
             else:
                 return 4 * (t - 0.75) - 1
 

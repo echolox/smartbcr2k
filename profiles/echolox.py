@@ -1,5 +1,5 @@
 from modifiers import *
-from modifiers.basic import bpmsync
+from modifiers.basic import bpm_sync
 from smci import View
 from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector
 from util import flatten, iprint
@@ -43,7 +43,7 @@ comment = {
 def create(i):
     bcr = i.input._o
 
-    s = Sine(frequency=bpmsync(180, 4))
+    s = Sine(frequency=bpm_sync(180, 4))
     sview = ModView("LFOSine_ModView", i, s)
     i.add_modifier(s)
     modview_button = bcr.command_buttons[0]

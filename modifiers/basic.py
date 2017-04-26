@@ -52,13 +52,13 @@ class Basic(Modifier):
     
     :param frequency: in Hz
     :param positive: centered mode vs positive mode (see module docstring)
-    :param kwargs: See Modifier
+    :param offset: time offset of the cycle 
     """
-
-    def __init__(self, frequency=0.25, positive=False, **kwargs):
+    def __init__(self, frequency=0.25, positive=False, offset=0, **kwargs):
         super().__init__(**kwargs)
         self.frequency = frequency
         self.positive = positive
+        self.offset = offset
 
     def serialize(self):
         """
@@ -68,6 +68,7 @@ class Basic(Modifier):
         m = super().serialize()
         m["frequency"] = self.frequency
         m["positive"] = self.positive
+        m["offset"] = self.offset
         return m
 
     def from_dict(self, m, *args, **kwargs):
@@ -80,21 +81,26 @@ class Basic(Modifier):
         super().from_dict(m, *args, **kwargs)
         self.frequency = m["frequency"]
         self.positive = m["positive"]
+        self.offset = m["offset"]
 
     def save(self):
         d = super().save()
         d["frequency"] = self.frequency
         d["positive"] = self.positive
+        d["offset"] = self.offset
         return d
 
     def load(self, d, i):
         super().load(d, i)
         self.frequency = d["frequency"]
         self.positive = d["positive"]
+        self.offset = d["offset"]
 
     def calculate(self, t):
         # TODO: Sync to midi clock
         t *= self.frequency
+
+        t = (t + self.offset) % 1
 
         # Dampen the amplitude of "centered" waves by 0.5
         # That way, setting the power of modulation in ModView

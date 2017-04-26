@@ -1,19 +1,19 @@
 import time
 
 from enum import Enum
-from queue import Empty, Full
+from queue import Full
 from threading import Thread
 
 import rtmidi
 from rtmidi.midiconstants import CONTROL_CHANGE
-from rtmidi.midiutil import open_midioutput, open_midiinput, list_available_ports, list_output_ports, list_input_ports, get_api_from_environment
+from rtmidi.midiutil import open_midioutput, open_midiinput, get_api_from_environment, \
+    list_output_ports, list_input_ports
 
-from util import FULL, clip, eprint, dprint, iprint, eprint
-from util.threadshell import Shell, yield_thread
-
-from .controls import Dial, Button, ControlParent
+from util import eprint
+from util.threadshell import yield_thread
 
 BLINK_INTERVAL = 0.3  # in seconds
+
 
 class PortNotFoundError(Exception):
     pass
@@ -21,9 +21,11 @@ class PortNotFoundError(Exception):
 
 def open_port_by_name(name, inout):
     if inout == "input":
+        # noinspection PyUnresolvedReferences,PyUnresolvedReferences
         midiio = rtmidi.MidiIn(get_api_from_environment(rtmidi.API_UNSPECIFIED))
         open_func = open_midiinput
     elif inout == "output":
+        # noinspection PyUnresolvedReferences,PyUnresolvedReferences
         midiio = rtmidi.MidiOut(get_api_from_environment(rtmidi.API_UNSPECIFIED))
         open_func = open_midioutput
     else:
@@ -31,6 +33,7 @@ def open_port_by_name(name, inout):
         raise PortNotFoundError
 
     ports = midiio.get_ports()
+    # noinspection PyUnresolvedReferences
     type_ = " input" if isinstance(midiio, rtmidi.MidiIn) else " ouput"
 
     if ports:
@@ -47,9 +50,9 @@ def select_port(port_type="input"):
     """
     Convenience function to select midi ports interactively
     """
-    if port_type=="input":
+    if port_type == "input":
         list_input_ports()
-    elif port_type=="output":
+    elif port_type == "output":
         list_output_ports()
     print("Select Port by number: ", end="")
     return int(input())
@@ -103,8 +106,8 @@ class Port(object):
         self.name = name
         if interactive:
             self.output, self.outname = open_midioutput(select_port("output"))
-            self.input,  self.inname  = open_midiinput (select_port("input"))
-        
+            self.input, self.inname = open_midiinput(select_port("input"))
+
         # The port's main_loop is supposed to run in its own thread. It is only started if
         # the object is constructed with auto_start = True or if the start method is called
         self.thread = Thread(target=self.main_loop, daemon=True)
@@ -165,7 +168,6 @@ class DeviceEvent(Enum):
 
 
 class Device(Port):
-
     def __init__(self, *args, **kwargs):
         # The controls on this device are collected in a map with Control.ID -> Control object
         # For any object using this Device we abstract away which Control is mapped to which
@@ -244,7 +246,6 @@ class Device(Port):
         """
         return control.ID in range(self.page * 16 * 128, (self.page + 1) * 16 * 128)
 
-
     def cc(self, ID, value, ignore_page=False):
         """
         Send a CC message to the device's midi port. The ID will be transformed
@@ -270,7 +271,7 @@ class Device(Port):
         - Update the blinking on the device
         """
         # Handle midi events
-        while(True):
+        while True:
             event = self.input.get_message()
             if event:
                 self.input_callback(event)
@@ -319,7 +320,7 @@ class Device(Port):
         # ignoring button presses to simulate toggle behaviour).
         real_value = control.set_value(value, force=force)
 
-#        iprint(ID == 873, self, value, real_value)
+        #        iprint(ID == 873, self, value, real_value)
         # Therefore we get the real_value reported back from the control which we can
         # then reflect on the input device. If None was returned, the control wants us
         # to ignore it
@@ -364,8 +365,6 @@ class Device(Port):
         case there is some logic making Controls change their value on their own.
         """
 
-
-
         for listener in self.listener_qs:
             try:
                 listener.put_nowait((DeviceEvent.CC, self, ID, value))
@@ -383,19 +382,18 @@ class OutputPort(Port):
     midi output while also reporting back and values it receives. Example:
     OutputPort <-> Virtual Midi Cable Driver <-> Ableton Live (or other DAW)
     """
+
     def __init__(self, *args, **kwargs):
         self.last_sent_values = {}
         super().__init__(*args, **kwargs)
 
     def update(self):
-        t = time.time()
-
         # Handle midi events
         event = self.input.get_message()
         if event:
             self.input_callback(event)
 
-    def cc(self, channel, cc, value, inform_listeners=False):
+    def cc(self, channel, cc, value):
         """
         Forwards the CC event to the output
         """
@@ -403,7 +401,8 @@ class OutputPort(Port):
         self.last_sent_values[ID] = value
         channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])
-#        print(channel, cc, value)
+
+    #        print(channel, cc, value)
 
     def input_callback(self, event):
         """
@@ -414,7 +413,7 @@ class OutputPort(Port):
         ID = ccc2ID(channel, cc)
 
         worth_reporting = False
-        try: 
+        try:
             if value != self.last_sent_values[ID]:
                 worth_reporting = True
         except KeyError:

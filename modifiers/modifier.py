@@ -1,19 +1,18 @@
-from inspect import isclass
 from collections import defaultdict as ddict
 
-from targets import ValueTarget
-from devices import clip
-
-from util import FULL, eprint, dprint, iprint
+from util import eprint, clip
 
 MIN_MOD = 0
 MAX_MOD = 127
 
 counter = 0
+
+
 def modname_gen(modifier):
     global counter
     counter += 1
     return "%s_%i" % (type(modifier).__name__, counter)
+
 
 class Modifier(object):
     """
@@ -30,10 +29,10 @@ class Modifier(object):
         else:
             self.name = name
         self._amplitude = amplitude  # The maximum value the Modifier will take on
-        self._value = 0              # The actual current value of the Modifier at any given time
+        self._value = 0  # The actual current value of the Modifier at any given time
 
         self.targets = ddict(lambda: 0.0)  # target object -> [-1, 1]
-    
+
     def serialize(self):
         """
         Returns a dict with key value pairs for all attributes that should be set upon recreation.
@@ -41,8 +40,7 @@ class Modifier(object):
         m = {"amplitude": self._amplitude,
              "type": type(self).__name__,
              "name": self.name,
-            }
-        m["targets"] = {t.name: power for t, power in self.targets.items()}
+             "targets": {t.name: power for t, power in self.targets.items()}}
         return m
 
     def from_dict(self, m, all_targets):
@@ -98,7 +96,7 @@ class Modifier(object):
 
     @amplitude.setter
     def amplitude(self, a):
-        self._amplitude = clip(MIN_MOD, MAX_MOD, a) 
+        self._amplitude = clip(MIN_MOD, MAX_MOD, a)
 
     @property
     def value(self):
@@ -108,7 +106,7 @@ class Modifier(object):
         """
         Returns the current value multiplied by the amplitude. Use this to modify things.
         """
-        return self.value * self.amplitude 
+        return self.value * self.amplitude
 
     def tick(self, t):
         """
@@ -121,7 +119,7 @@ class Modifier(object):
                 target.modify(self, modvalue * power)
             except AttributeError as e:
                 eprint(e)
-                
+
         return modvalue
 
     def calculate(self, t):
@@ -131,7 +129,7 @@ class Modifier(object):
         """
         raise NotImplementedError
 
-    def save(self): 
+    def save(self):
         """
         """
         return {
@@ -146,16 +144,12 @@ class Modifier(object):
         self._value = d["_value"]
         self._amplitude = d["_amplitude"]
         self.targets = ddict(lambda: 0.0)
-        for tname, value in d["targets"].items():
-            target = i.targets[tname]
+        for t_name, value in d["targets"].items():
+            target = i.targets[t_name]
             self.targets[target] = value
-
 
     def __repr__(self):
         return type(self).__name__
 
     def __str__(self):
         return self.__repr__()
-
-
-

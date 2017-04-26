@@ -1,4 +1,5 @@
-from util import clip, dprint, iprint
+from util import clip, eprint
+
 
 class ControlParent(object):
     """
@@ -6,21 +7,22 @@ class ControlParent(object):
     parent object of this type (or another type that provides the same methods. This
     is Python, we don't enforce this, right?).
     """
+
     def __init__(self, *args, **kwargs):
         pass
-    
+
     def send_to_device(self, ID, value):
         """
         Gets called when the hardware device should receive
         a value change
         """
-        pass
+        raise NotImplementedError
 
     def control_changed(self, ID, value):
         """
         Gets called by the Control object when a value changes
         """
-        pass
+        raise NotImplementedError
 
 
 ### HARDWARE CONTROL SIMULATIONS
@@ -33,10 +35,10 @@ class Control(object):
 
     # Designate which attributes of the Control can be configured by the user
     # and provide some defaults
-    default_conf = {"minval": 0, 
+    default_conf = {"minval": 0,
                     "maxval": 127,
                     "blink": False,
-                   }
+                    }
 
     def __init__(self, ID, parent=None, minval=0, maxval=127, blink=False):
         self.ID = ID
@@ -82,6 +84,7 @@ class Control(object):
 buttonconf = Control.default_conf
 buttonconf.update({"toggle": True})
 
+
 class Button(Control):
     """
     A button can function in toggle or momentary mode. It assumes either Control.minval or Contro.maxval
@@ -94,14 +97,14 @@ class Button(Control):
 
     # @TODO: This is hacky, make it more straightforward
     default_conf = buttonconf
-    
+
     def __init__(self, ID, parent=None, toggle=True, **kwargs):
         super().__init__(ID, parent, **kwargs)
         self.toggle = toggle
         self.state = False
         self.ignore = 0  # Used to simulate a toggle behaviour from a momentary button
-                         # To toggle we need to ignore some inputs. This is a countdown
-                         # of how many inputs to ignore before listening again
+        # To toggle we need to ignore some inputs. This is a countdown
+        # of how many inputs to ignore before listening again
 
     def on(self):
         """
@@ -169,7 +172,8 @@ class Button(Control):
             self._value = value
 
             return self._value
-    
+
+
 class Dial(Control):
     """
     A dial spans a range of values (typically 0 to 127, configured using minval and maxval).

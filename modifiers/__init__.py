@@ -1,5 +1,6 @@
-from .modifier import *
+from inspect import isclass
 
+from .modifier import *
 from .basic import *
 
 # Create a catalogue of modifiers to fetch Classes by name

@@ -1,4 +1,4 @@
-from .ports import Device, ccc2ID, ID2ccc, open_port_by_name
+from .ports import Device, ccc2ID, open_port_by_name
 from .controls import Dial, Button
 
 
@@ -11,7 +11,7 @@ class BCR2k(Device):
     - Set all buttons to momentary
     - Set all value ranges from 0 to 127
     """
-       
+
     def __init__(self, channel_offset=7, *args, **kwargs):
         # Typically you would configure your BCR2k to start on channel 1
         # Since I don't (or maybe didn't depending on when you read this)
@@ -29,17 +29,19 @@ class BCR2k(Device):
         super().__init__("BCR2k", *args, auto_start=False, **kwargs)
 
         self.output, self.outname = open_port_by_name("BCR", "output")
-        self.input,  self.inname  = open_port_by_name("BCR", "input")
+        self.input, self.inname = open_port_by_name("BCR", "input")
 
         if auto_start:
             self.start()
 
     def setup_controls(self):
         ID = ccc2ID(self.channel_offset, 0) + 1  # Because I use Channel 7, starting with cc 1
-                                                 # That's gonna change eventually
+
+        # That's gonna change eventually
 
         # A helper function to create n controls of the given Class with some options
         # Returns a list of newly created controls
+        # noinspection PyShadowingNames
         def make_controls(ID, n, Cls, *args, **kwargs):
             newly_added = []
             for i in range(n):
@@ -49,17 +51,22 @@ class BCR2k(Device):
             return ID, newly_added
 
         ID, self.macros = make_controls(ID, 32, Dial)
+        # noinspection PyAttributeOutsideInit
         ID, self.macro_buttons = make_controls(ID, 32, Button, toggle=False)
+        # noinspection PyAttributeOutsideInit
         ID, self.menu_buttons = make_controls(ID, 16, Button, toggle=True)
 
         # We'll only paginate the main dials to get 48 instead of just 24
         ID2 = ID + 16 * 128
+        # noinspection PyAttributeOutsideInit
         ID, self.dials = make_controls(ID, 24, Dial)
-        _,  page2_dials = make_controls(ID2, 24, Dial)
+        _, page2_dials = make_controls(ID2, 24, Dial)
         self.dials.extend(page2_dials)
 
         # Dials by column and Dials by row
+        # noinspection PyAttributeOutsideInit
         self.dialsc = [[] for _ in range(8)]
+        # noinspection PyAttributeOutsideInit
         self.dialsr = [[] for _ in range(6)]
         row = 0
         column = 0
@@ -72,6 +79,7 @@ class BCR2k(Device):
                 column = 0
                 row += 1
 
+        # noinspection PyAttributeOutsideInit
         ID, self.command_buttons = make_controls(ID, 4, Button, toggle=False)
 
     def macro_bank(self, bank):
@@ -98,7 +106,7 @@ class BCR2k(Device):
         update the main dials that are actively shown.
         """
         p = self.page
-        for dial in self.dials[p*24:p*24 + 24]:
+        for dial in self.dials[p * 24:p * 24 + 24]:
             self.cc(dial.ID, dial.get_value())
 
     def control_on_active_page(self, control):

@@ -110,13 +110,13 @@ def create(interface):
     """
     # Use the second row of buttons
     i.add_to_universal_controls(AttributeType.boolean, bcr.menu_rows(1))
-    # All the dials, starting in the top right and going row by row
+    # All the dials, starting in the top left and going row by row
     i.add_to_universal_controls(AttributeType.span, bcr.dials)
 
     """ SETUP MODIFIERS
     We map four types of modifiers to the function buttons of the BCR2k. Holding the button of an
     LFO down will allow us to dial in a modulation power for the target values in that view.
-    Tapping index (and letting go immediately) brings up the config view where you can adjust frequency,
+    Tapping it (and letting go immediately) brings up the config view where you can adjust frequency,
     amplitude etc.
     
     Make sure to pick unique names!
@@ -148,7 +148,7 @@ def create(interface):
     To switch between the two, we need to issue a pageflip command. Thankfully, there's
     a Target for that!
     
-    We map index to the bottom left button of the function buttons (EDIT, originally).
+    We map it to the bottom left button of the function buttons (EDIT, originally).
     It is set to toggle. Otherwise you'd need to hold the button down to reach the second
     set of dials, which might also suit your workflow.
     """
@@ -161,10 +161,10 @@ def create(interface):
     """ MACRO BANKS ###
     # BANK 1
     The first dial is set up to save and load snapshots. Turn the dial to select a snapshot,
-    hold index down to save and tap index to load.
+    hold it down to save and tap it to load.
     
     The other 7 dials are set up as FlexParameters. After manipulating any other control on
-    BCR2k, tap one of these to map the same Target to index. Dynamic Macro controls!
+    BCR2k, tap one of these to map the same Target to it. Dynamic Macro controls!
     
     # BANKS 2-4
     No special functions here, so we map them directly to output parameters. We make use of

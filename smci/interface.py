@@ -42,6 +42,7 @@ class Interface(object):
         """
         self.input = Shell(devin, devin.update)
         self.output = Shell(devout, devout.update)
+
         self.targets = {}
         self.view = initview if initview else View(self.input, "Init")
         self.views = [self.view]
@@ -53,19 +54,16 @@ class Interface(object):
         self.input.add_listener(self.device_q)
         self.output.add_listener(self.device_q)
 
-        self.observers = []
-
         self.modifiers = set()
 
         self.parameter_maker = ParameterMaker(self, 1)
-        self.view_maker      = ViewMaker(self)
+        self.view_maker = ViewMaker(self)
 
-        self.update_thread = Thread(target=self.main_loop, daemon=True)
+        self.update_thread = None
 
         self.recent_changes = {}
-        self.last_modified_targets = set()
-
         self.reset_recent_changes()
+        self.last_modified_targets = set()
 
         self.snapshots = {}
 
@@ -186,9 +184,6 @@ class Interface(object):
 
         print("Profile loaded.")
 
-        for o in self.observers:
-            o.callback_load_profile()
-
     ########### VIEWS ###############
            
     def add_view(self, view):
@@ -236,9 +231,6 @@ class Interface(object):
 
         self.reflect_all_on_input()
         print("[%s] Switched to %s" % (self, view))
-
-        for o in self.observers:
-            o.callback_view(self.view, new_view)
 
     ############## TARGETS ################
 
@@ -459,6 +451,7 @@ class Interface(object):
     ############## UPDATING ####################
 
     def start(self):
+        self.update_thread = Thread(target=self.main_loop, daemon=True)
         self.update_thread.start()
 
     def main_loop(self):

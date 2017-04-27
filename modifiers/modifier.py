@@ -15,11 +15,17 @@ def modname_gen(modifier):
     counter += 1
     return "%s_%i" % (type(modifier).__name__, counter)
 
+
+# TODO: These will be useful for not just mapping Modifiers to some kind of Config View
+#       Move them out to somewhere else once that becomes apparent
 class AttributeType(Enum):
     boolean = 0
     span = 1
 
-AttributeDescriptor = namedtuple("AttributeDescriptor", ["name", "min", "max", "cast", "type", "readonly"])
+
+AttributeDescriptor = namedtuple("AttributeDescriptor", ["name", "min", "max", "cast", "type", "readonly", "scale"])
+
+#####
 
 
 class Modifier(object):
@@ -31,7 +37,7 @@ class Modifier(object):
     method calculate.
     """
     attribute_configs = (
-        AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span, False),
+        AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span, False, None),
     )
 
     def __init__(self, name=None, amplitude=MAX_MOD):

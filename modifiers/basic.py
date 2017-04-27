@@ -35,7 +35,6 @@ from random import random
 
 from .modifier import Modifier, AttributeDescriptor, AttributeType
 
-
 def bpm_sync(bpm, quarter_notes):
     """
     Turns a BPM value and a length given in beats into a frequency usable by a modifier.
@@ -57,11 +56,11 @@ class Basic(Modifier):
     """
 
     attribute_configs = (
-        AttributeDescriptor("amplitude",    0, 127, int,   AttributeType.span, False),
-        AttributeDescriptor("frequency", 0.01,  10, float, AttributeType.span, False),
-        AttributeDescriptor("offset",    -0.5, 0.5, float, AttributeType.span, False),
+        AttributeDescriptor("amplitude",    0, 127, int,   AttributeType.span, False, None),
+        AttributeDescriptor("frequency", 0.01,  10, float, AttributeType.span, False, 100),
+        AttributeDescriptor("offset",    -0.5, 0.5, float, AttributeType.span, False, None),
 
-        AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False),
+        AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False, None),
     )
 
     def __init__(self, frequency=0.25, positive=False, offset=0, **kwargs):

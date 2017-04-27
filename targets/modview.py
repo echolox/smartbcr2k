@@ -4,16 +4,13 @@ present in the currently active view. It does so by constructing a temporary
 view with temporary targets, that allow the user to dial in a modulation power
 per Target.
 """
-from collections import namedtuple
 from time import time
 
 from .target import Target, ValueTarget
 from smci.view import View
 from devices.controls import Button
-from modifiers import Modifier, AttributeType, AttributeDescriptor
-
-import traceback
-
+from modifiers import AttributeType, AttributeDescriptor
+from util.scale import Scale
 
 LONGPRESS_TIME = 0.5  # in seconds
 
@@ -53,14 +50,25 @@ class ModConfig(ValueTarget):
         self.modifier = modifier
         self.attribute = attribute_descriptor
 
+        if self.attribute.scale:
+            self.scale = Scale(self.attribute.scale, self.attribute.min, self.attribute.max)
+        else:
+            self.scale = None
+
         initial = self.map_to_control(getattr(modifier, attribute_descriptor.name))
         super().__init__(name, parent, initial)
 
     def map_to_control(self, value):
-        return int((value - self.attribute.min) / (self.attribute.max - self.attribute.min) * 127)
+        if self.scale:
+            return self.scale.inverse(value)
+        else:
+            return int((value - self.attribute.min) / (self.attribute.max - self.attribute.min) * 127)
 
     def map_from_control(self, value):
-        return self.attribute.cast(value * (self.attribute.max - self.attribute.min) / 127.0 + self.attribute.min)
+        if self.scale:
+            return self.scale(value)
+        else:
+            return self.attribute.cast(value * (self.attribute.max - self.attribute.min) / 127.0 + self.attribute.min)
 
     def trigger(self, sender, value=None):
         """
@@ -73,7 +81,6 @@ class ModConfig(ValueTarget):
         real_value = super().trigger(sender, value=value)
         if not self.attribute.readonly:
             corrected_value = self.map_from_control(real_value)
-#            print("Setting %s to" % self.attribute.name, corrected_value)
             setattr(self.modifier, self.attribute.name, corrected_value)
 
         return real_value
@@ -112,7 +119,7 @@ class ModView(Target):
                    }
 
         # Construct a target that displays the Modifier's current value
-        attribute_descriptor = AttributeDescriptor("value", -1.0, 1.0, float, AttributeType.span, True)
+        attribute_descriptor = AttributeDescriptor("value", -1.0, 1.0, float, AttributeType.span, True, None)
         try:
             modconfig = self.config_view_targets["value"]
         except KeyError:

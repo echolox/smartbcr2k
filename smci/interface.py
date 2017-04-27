@@ -10,7 +10,7 @@ from collections import defaultdict as ddict
 from colorama import Fore, Back, Style
 
 from devices.controls import controls_to_IDs
-from util import keys_to_ints, unify, eprint, iprint
+from util import keys_to_ints, unify, eprint
 from util.threadshell import Shell, yield_thread
 from util.attribute_mapping import AttributeType
 
@@ -151,8 +151,7 @@ class Interface(object):
              "views": [],
              "modifiers": [],
              "name": "Default Profile"}
-        print(p["universal_controls"])
-        
+
         for view in self.views:
             v = {"name": view.name,
                  "configuration": view.configuration,
@@ -536,7 +535,6 @@ def resolve_profile(name):
     Find a script in the profiles dir/package by name.
     """
     profile_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, PROFILES_EXT))
-    print(profile_file)
     if not os.path.isfile(profile_file):
         raise FileNotFoundError
     return profile_file

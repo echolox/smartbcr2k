@@ -1,8 +1,8 @@
-from modifiers import *
-from modifiers.basic import bpm_sync
+import util
+
 from smci import View
 from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector
-from util import flatten, iprint
+from modifiers import *
 
 comment = {
     "author": "Matt 'Echolox' Duncan",
@@ -10,7 +10,7 @@ comment = {
     """
     The main feature of this profile is the "Struct of Arrays" vs "Arrays of Structs"
     approach. The two rows of buttons on the BCR2k map to these two kinds of views.
-
+    
     From the init view...
     Pushing a button on the upper row selects the respective track and displays
     all 8 FX on that track from left to right. The buttons in the lower row activate
@@ -30,6 +30,8 @@ comment = {
     click the button of a macro dial to map that dial to the same Parameter you
     manipulated previously.
 
+    For the LFOs you need to make the function buttons (Store, Learn, Edit, Exit)
+    mappable using BCEdit. 
 
     If you want to support the development of this project check out my music
     on echolox.bandcamp.com or youtube.com/echolox and leave a few bucks if you like :)
@@ -40,74 +42,156 @@ comment = {
     "twitter": "@echolox",
 }
 
-def create(i):
-    bcr = i.input._o
 
-    # Define universal controls
+def map_controls_to_targets(view, controls, targets):
+        """ Maps the list of controls to the list of targets. """
+        for control, target in zip(controls, targets):
+            view.map_this(control.ID, target)
+
+def configure_controls(view, controls, attribute, value):
+    """ In the provided view, configures the list of controls by setting the attribute to the provided value. """
+    for control in controls:
+        view.configuration[control.ID][attribute] = value
+
+
+# @MOVE: This out into util or something
+def ccc(channel=0, cc=0, forbidden=None):
+    """
+    Generates channel and cc messages starting with the ones provided on construction.
+    :param i: 
+    :param channel: 
+    :param cc: 
+    :return: 
+    """
+    if forbidden is None:
+        forbidden = []
+
+    while channel <= 16:
+        yield channel, cc
+
+        while True:
+            cc = (cc + 1) % 128
+            if cc not in forbidden:
+                break
+
+        if cc == 0:  # We wrapped around
+            channel += 1
+
+
+def create(interface):
+    """
+    :param iterface: The Interface object managing the Devices, Targets, Modifiers etc. on which we build the profile
+    """
+
+    """ HELPERS AND SHORTCUTS
+    First, let's define some helper variables to make some of the following lines shorter.
+    """
+    # It's just so much to type every time
+    i = interface
+
+    # The BCR2k is in a Shell within the Interface. Don't know what that means? Have a look in
+    # util.threadshell. Anyway, for the purposes of setting up a profile we'd like to have direct
+    # access to the Device.
+    # TODO: Inject this when calling create from make_profile
+    bcr = i.input._o
+    # Macro dials. Get each bank using [i] with i in [0, 1, 2, 3]
+    macros = bcr.macros
+
+    # The initial View that is active on startup
+    view_init = i.view
+
+
+    """ UNIVERSAL CONTROLS
+    We start out by defining which controls (buttons and dials) should be used by the Interface
+    to display certain pre-configured values to us. An example would be the configuration of 
+    Modifiers like LFOs (frequency, amplitude, offset, positive...). When switching into the config
+    view of an LFO, these values will be made adjustable for us using the controls defined as
+    universal controls.
+    
+    boolean refers to settings that can be either on or off.
+    span refers to settings that can hold a value within a certain interval (typically 0-1 or 0-127)
+    """
+    # Use the second row of buttons
     i.add_to_universal_controls(AttributeType.boolean, bcr.menu_rows(1))
+    # All the dials, starting in the top right and going row by row
     i.add_to_universal_controls(AttributeType.span, bcr.dials)
 
-    # SETUP MODIFIERS
-    sine = Sine("LFOSine")
-    saw = Saw("LFOSaw")
-    square = Square("LFOSquare")
-    random = SampledRandom("LFOSampledRandom")
+    """ SETUP MODIFIERS
+    We map four types of modifiers to the function buttons of the BCR2k. Holding the button of an
+    LFO down will allow us to dial in a modulation power for the target values in that view.
+    Tapping index (and letting go immediately) brings up the config view where you can adjust frequency,
+    amplitude etc.
+    
+    Make sure to pick unique names!
+    """
+    # TODO: Make this helper function available elsewhere
+    def create_lfo(interface, Type, name, button):
+        """
+        Creates a LFO and maps it to a button on the active view of the Interface. Returns the LFO and the ModView
+        :param interface: Interface to map on
+        :return: (LFO, ModView)
+        """
+        lfo = Type(name)
+        view = ModView("%s_ModView" % name, interface, lfo)
+        interface.add_modifier(lfo)
+        interface.view.map_this(button.ID, view)
+        interface.view.configuration[button.ID]["toggle"] = False
+        return lfo, view
 
-    view_sine = ModView("LFOSine_ModView", i, sine)
-    view_saw = ModView("LFOSaw_ModView", i, saw)
-    view_square = ModView("LFOSquare_ModView", i, square)
-    view_random = ModView("LFORandom_ModView", i, random)
+    lfos, lfo_views = [], []
+    sa = util.split_append(lfos, lfo_views)
 
+    sa(create_lfo(i, Sine, "LFOSine", bcr.function_buttons[0]))
+    sa(create_lfo(i, Saw, "LFOSaw", bcr.function_buttons[1]))
+    sa(create_lfo(i, Square, "LFOSquare", bcr.function_buttons[2]))
+    sa(create_lfo(i, SampledRandom, "LFORandom", bcr.function_buttons[3]))
 
-    i.add_modifier(sine)
-    i.add_modifier(saw)
-    i.add_modifier(square)
-    i.add_modifier(random)
-
-    sine_button = bcr.function_buttons[0]
-    i.view.map_this(sine_button.ID, view_sine)
-    i.view.configuration[sine_button.ID]["toggle"] = False
-
-    saw_button = bcr.function_buttons[1]
-    i.view.map_this(saw_button.ID, view_saw)
-    i.view.configuration[saw_button.ID]["toggle"] = False
-
-    square_button = bcr.function_buttons[2]
-    i.view.map_this(square_button.ID, view_square)
-    i.view.configuration[square_button.ID]["toggle"] = False
-
-    random_button = bcr.function_buttons[3]
-    i.view.map_this(random_button.ID, view_random)
-    i.view.configuration[random_button.ID]["toggle"] = False
-
-    ### MACRO BANKS ###
-    ## Dials: Parameters
-    ## Buttons: Not used
-    macros = bcr.macros
-    init_view = i.view
-
+    """ GLOBAL PAGEFLIP
+    Our simulated BCR2k provides us three more rows of dials than the real unit has.
+    To switch between the two, we need to issue a pageflip command. Thankfully, there's
+    a Target for that!
+    
+    We map index to the bottom left button of the command buttons (bottom right of the unit).
+    It is set to toggle. Otherwise you'd need to hold the button down to reach the second
+    set of dials, which might also suit your workflow.
+    """
     global_pageflip = PageFlip("Global Pageflip", i, bcr)
     pageflip_button = bcr.command_buttons[2]
+    view_init.map_this(pageflip_button.ID, global_pageflip)
+    view_init.configuration[pageflip_button.ID]["toggle"] = True
 
 
-    # 0: Snapshot Selector
+    """ MACRO BANKS ###
+    # BANK 1
+    The first dial is set up to save and load snapshots. Turn the dial to select a snapshot,
+    hold index down to save and tap index to load.
+    
+    The other 7 dials are set up as FlexParameters. After manipulating any other control on
+    BCR2k, tap one of these to map the same Target to index. Dynamic Macro controls!
+    
+    # BANKS 2-4
+    No special functions here, so we map them directly to output parameters. We make use of
+    the quick_parameter method of the interface we will sequentially assign the controls
+    Parameter Targets. All these do is send out a CC message to the output Device of the Interface.
+    """
+    # BANK 1
     snpsel = SnapshotSelector("Snapshots", i)
     snpset = SnapshotButton("SnapshotButton", i, snpsel)
 
-    # 1: Flex Targets
-    macro_targets = [snpsel] + [FlexParameter("Flex_%i" % (it + 1), i) for it in range(0, 7)]
-    for macro, target in zip(bcr.macro_bank(0), macro_targets):
-        init_view.map_this(macro.ID, target)
+    flex_params  = [FlexParameter("Flex_%i" % index, i)          for index in range(1, 8)]
+    flex_setters = [FlexSetter("FlexSetter_%i" % index, i, flex) for index, flex in enumerate(flex_params, start=1)]
 
-    macro_setters = [snpset] + [FlexSetter("FlexSetter_%i" % (it + 1), i, flex)
-                                for it, flex in enumerate(macro_targets[1:], start=1)]
-    for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
-        init_view.map_this(mbutton.ID, target)
-        init_view.configuration[mbutton.ID]["toggle"] = False
+    map_controls_to_targets(view_init, bcr.macro_bank(0),         [snpsel] + flex_params)
+    map_controls_to_targets(view_init, bcr.macro_bank_buttons(0), [snpset] + flex_setters)
+    configure_controls(view_init, bcr.macro_bank_buttons(0), "toggle", False)
 
-    # Need 8 parameters to keep offset because I'm too lazy to remap in Ableton
+    # Skip 8 parameters (CC Values) to keep offset because I'm too lazy to remap in Ableton Live
     i.parameter_maker.skip(8)
 
+    # Collect all the Targets that the BCR2k's macros are mapped to, starting with the ones we already did
+    macro_targets = flex_params
+
+    # BANKS 2-4: Good old CC Parameters
     # 2: Parameters (Patch selection)
     for macro in bcr.macro_bank(1):
         macro_targets.append(i.quick_parameter(macro.ID))
@@ -120,138 +204,146 @@ def create(i):
     for macro in bcr.macro_bank(3):
         macro_targets.append(i.quick_parameter(macro.ID))
 
-    # MAIN VIEW BUTTONS AND DIALS
 
+    """ INIT VIEW  DIALS
+    Just map all of the dials to simple CC Parameters. Nothing fancy
+    bcr.dials includes the second set of dials we can reach using the pageflip function.
+    """
     for dial in bcr.dials:
         i.quick_parameter(dial.ID)
-        
-#    for command in bcr.command_buttons:
-#        i.quick_parameter(command.ID)
+
+
+    """ MENU BUTTONS: Let's get complicated!
+    The top row of buttons let's us select a track. On each track, the buttons in the bottom row activate
+    and deactivate the 8 effects on that track. Each column of 6 dials (pageflip!) controls maps to the
+    parameters of that effect. 
     
-    i.view.map_this(pageflip_button.ID, global_pageflip)
-    i.view.configuration[pageflip_button.ID]["toggle"] = True
-
-    ### MENU BUTTONS ###
-    ## Top Row: Switch to View of that Track
-    ## Buttom Row: Switch to View of that Effect per Track
-    ## First we set up the targets and then distribute them to the eight views
-    to_init_view = SwitchView("To_INIT", i, i.view)
-    views_tracks = [View(bcr, "Track_%i" % (it + 1)) for it in range(8)]
-    views_fx     = [View(bcr, "FX_%i"    % (it + 1)) for it in range(8)]
-    switch_tracks = [SwitchView("To_T%i" % (it + 1), i, views_tracks[it]) for it in range(8)]
-    switch_fx =     [SwitchView("To_FX%i" % (it + 1), i, views_fx[it]) for it in range(8)]
-
-    for button, to_track in zip(bcr.menu_rows(0), switch_tracks):
-        i.view.configuration[button.ID]["toggle"] = False
-        i.view.map_this(button.ID, to_track)
+    That means, for each track we need to have a View with unique Parameters per Dial. We also need to make
+    sure that in each view the top row still maps to the other Track Views. The button of the currently active
+    view should blink and lead us back to the Init View.
     
-    for button, to_fx in zip(bcr.menu_rows(1), switch_fx):
-        i.view.configuration[button.ID]["toggle"] = False
-        i.view.map_this(button.ID, to_fx)
+    Suppose you're back in the Init View. Instead of choosing a track on the top row, you can select an effect on
+    the bottom row. Now, the top row houses the activators for that effect for each track. These are the same
+    Targets (not duplicates, the exact same objects) we mapped per track before that. We do the same things with
+    the dials.
     
-    next_cc = i.parameter_maker.next_cc
-    # @MOVE: This out into util or something
-    def ccc(channel=0, cc=0):
-        while channel <= 16:
-            yield channel, cc
+    Tapping another button in the bottom row chooses a different effect. Tapping the same button (that's again
+    blinking) takes us back to Init View.
+    """
+    # Construct the Views. We'll fill them later but need them now to construct SwitchTargets
+    views_tracks   = [View(bcr, "Track_%i" % (index + 1)) for index in range(8)]
+    views_fx       = [View(bcr, "FX_%i"    % (index + 1)) for index in range(8)]
 
-            while True:
-                cc = (cc + 1) % 128
-                if cc not in i.parameter_maker.forbidden:
-                    break
+    # These SwitchTargets will bring us to the Views constructed above
+    switch_tracks  = [SwitchView("To_T%i"  % (index + 1), i, views_tracks[index]) for index in range(8)]
+    switch_fx      = [SwitchView("To_FX%i" % (index + 1), i, views_fx[index])     for index in range(8)]
+    switch_to_init =  SwitchView("To_INIT",               i, view_init)
 
-            if cc == 0:  # We wrapped around
-                channel += 1
+    # Distribute them on the Init View
+    map_controls_to_targets(view_init, bcr.menu_rows(0), switch_tracks)
+    configure_controls(view_init, bcr.menu_rows(0), "toggle", False)
 
-    gen = ccc(1, next_cc)
+    map_controls_to_targets(view_init, bcr.menu_rows(1), switch_fx)
+    configure_controls(view_init, bcr.menu_rows(1), "toggle", False)
 
-    dials = flatten(bcr.dialsc)
-    for track_index in range(8):
-        view = views_tracks[track_index]
 
+    ### FOR ALL OF THE FOLLOWING VIEWS
+    ### We want to set up the follow controls, so lets define a helper function for that
+    def controls_for_all(view):
+        """
+        - Macro Buttons and Dials
+        - Pageflip
+        - Modifiers
+        :param view: The view on which to map
+        """
+        ## @TODO: Create some "map globally" functionality so we only need to do this once for all possible views
+        ##        or at least a subset of views.
+
+        # Macros
         for dial, target in zip(bcr.macros, macro_targets):
             view.map_this(dial.ID, target)
-        for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
+        for mbutton, target in zip(bcr.macro_bank_buttons(0), flex_setters):
             view.map_this(mbutton.ID, target)
             view.configuration[mbutton.ID]["toggle"] = False
 
-        fx_onoff = []
-        it = 1
-        for channel, cc in [next(gen) for _ in range(8)]:
-            p = Parameter("T%i_FX%i_OnOff" % (track_index + 1, it),
-                          i, channel, cc, is_button=True) 
-
-            fx_onoff.append(p)
-            it += 1
-
-        fx_params = []
-        fx_index = 1
-        subparam_index = 0
-        for channel, cc in [next(gen) for _ in range(48)]:
-            p = Parameter("T%i_FX%i_%i" % (track_index + 1, fx_index, subparam_index + 1),
-                          i, channel, cc)
-            fx_params.append(p)
-            subparam_index = (subparam_index + 1) % 3
-            if subparam_index == 0:
-                fx_index += 1
-
-        # First Row Buttons: Switch To View
-        it = 0
-        for button, target in zip(bcr.menu_rows(0), switch_tracks):
-            view.configuration[button.ID]["toggle"] = False
-            if it != track_index:
-                view.map_this(button.ID, target)
-            else:
-                view.map_this(button.ID, to_init_view)
-                view.configuration[button.ID]["blink"] = True
-            it += 1
-
-
-        # Second Row Buttons: FX On Off
-        it = 1
-        for button, target in zip(bcr.menu_rows(1), fx_onoff):
-            view.map_this(button.ID, target)
-
-            # SPECIAL CASE: Stutter and Repeater momentary
-            # @TODO: Move this somewhere else for easier configuration
-            if it in (5, 7):
-                view.configuration[button.ID]["toggle"] = False
-
-            it += 1
-
-         
-        # Dials:
-        for dial, target in zip(dials, fx_params):
-            view.map_this(dial.ID, target)
-        
         # Command Buttons:
         view.map_this(pageflip_button.ID, global_pageflip)
         view.configuration[pageflip_button.ID]["toggle"] = True
-        view.map_this(sine_button.ID, view_sine)
 
-        i.views.append(view) 
-        
-
-    # END PER TRACK VIEW
-
-    for index, view in enumerate(views_fx):
-
-        for dial, target in zip(bcr.macros, macro_targets):
-            view.map_this(dial.ID, target)
-        for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_setters):
-            view.map_this(mbutton.ID, target)
+        # Modifiers
+        map_controls_to_targets(view, bcr.function_buttons, lfo_views)
+        configure_controls(view, bcr.function_buttons, "toggle", False)
+        ### END GLOBAL STUFF
 
 
-        it = 0
-        for button, target in zip(bcr.menu_rows(1), switch_fx):
+    ### We start by going track by track and mapping the FX activators, FX parameters and of course
+    ### our top row menu buttons to lead us to the other tracks or back to Init View
+
+    # Create a generator that will yield the next combination of Channel and CC Value for us
+    gen = ccc(channel=1, cc=i.parameter_maker.next_cc, forbidden=i.parameter_maker.forbidden)
+    gen_n = lambda n: [next(gen) for _ in range(n)]
+
+    # We want to move through the dials by column, but do so in one big list
+    dials = util.flatten(bcr.dialsc)
+
+    # Now let's iterate per Track
+    for track_index in range(8):
+        view = views_tracks[track_index]
+
+        ## First, let's map things that we want to keep from init view, our global controls if you will
+        controls_for_all(view)
+
+        # First Row Buttons: Switch To View
+        index = 0
+        for button, target in zip(bcr.menu_rows(0), switch_tracks):
             view.configuration[button.ID]["toggle"] = False
-            if it != index:
+            if index != track_index:
                 view.map_this(button.ID, target)
             else:
-                view.map_this(button.ID, to_init_view)
+                view.map_this(button.ID, switch_to_init)
                 view.configuration[button.ID]["blink"] = True
-            it += 1
+            index += 1
 
+        # Second Row Buttons: Effects activators
+        fx_onoff = []
+        for index, (channel, cc) in enumerate(gen_n(8), start=1):
+            p = Parameter("T%i_FX%i_OnOff" % (track_index + 1, index), i, channel, cc, is_button=True)
+#            print(p, channel, cc)
+            fx_onoff.append(p)
+        map_controls_to_targets(view, bcr.menu_rows(1), fx_onoff)
+        # SPECIAL CASE: Stutter and Repeater momentary
+        # @TODO: Move this somewhere else for easier configuration
+        view.configuration[bcr.menu_rows(1)[4].ID]["toggle"] = False
+        view.configuration[bcr.menu_rows(1)[6].ID]["toggle"] = False
+
+        # Effects parameters
+        fx_params = []
+        subparam_index = 0
+        for index, (channel, cc) in enumerate(gen_n(48), start=1):
+            p = Parameter("T%i_FX%i_%i" % (track_index + 1, (index - 1) / 6 + 1, subparam_index + 1), i, channel, cc)
+            fx_params.append(p)
+#            print(p, channel, cc)
+
+            subparam_index = (subparam_index + 1) % 6
+        map_controls_to_targets(view, dials, fx_params)
+
+        i.views.append(view)
+    # END PER TRACK VIEW
+
+    # Now we'll iterate per FX. The Parameters already exist, we just need to cherry-pick them
+    for index, view in enumerate(views_fx):
+        # Don't forget our "global controls"
+        controls_for_all(view)
+
+        fx_index = 0
+        for button, target in zip(bcr.menu_rows(1), switch_fx):
+            view.configuration[button.ID]["toggle"] = False
+            if fx_index != index:
+                view.map_this(button.ID, target)
+            else:
+                view.map_this(button.ID, switch_to_init)
+                view.configuration[button.ID]["blink"] = True
+            fx_index += 1
 
         for track, t_view in enumerate(views_tracks):
             onoff = t_view.map[bcr.menu_rows(1)[index].ID][0] 
@@ -264,10 +356,5 @@ def create(i):
             for subparam, p in enumerate(params):
                 view.map_this(bcr.dialsc[track][subparam].ID, p)
 
-        # Command Buttons:
-        view.map_this(pageflip_button.ID, global_pageflip)
-        view.configuration[pageflip_button.ID]["toggle"] = True
-        view.map_this(sine_button.ID, view_sine)
-
         i.views.append(view)
-
+    # END PER EFFECT VIEW

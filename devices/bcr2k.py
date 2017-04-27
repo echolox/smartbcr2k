@@ -76,7 +76,6 @@ class BCR2k(Device):
 
         # noinspection PyAttributeOutsideInit
         ID, self.function_buttons = make_controls(ID, 4, Button, toggle=False)
-        print(self.function_buttons)
 
     def macro_bank(self, bank):
         """

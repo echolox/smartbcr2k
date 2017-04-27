@@ -67,3 +67,11 @@ def interactive_mode():
     Drop into interactive mode
     """
     code.interact(local=locals())
+
+
+def split_append(l1, l2):
+    def inner(x):
+        l1.append(x[0])
+        l2.append(x[1])
+    return inner
+

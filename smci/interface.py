@@ -10,14 +10,15 @@ from importlib import import_module
 from colorama import Fore, Back, Style
 
 from util import keys_to_ints, unify, eprint, iprint
-from util.threadshell import Shell, yield_thread 
+from util.threadshell import Shell, yield_thread
+from util.attribute_mapping import AttributeType
 
 from targets import get_target, ValueTarget
 from devices import DeviceEvent, BCR2k, VirtualMidi
 from modifiers import get_modifier
 
-from .makers import ParameterMaker, ViewMaker
 from .view import View
+from .makers import ParameterMaker, ViewMaker
 
 
 class Interface(object):
@@ -65,10 +66,32 @@ class Interface(object):
         self.reset_recent_changes()
         self.last_modified_targets = set()
 
+        self.universal_controls = {
+            AttributeType.boolean: [841, 842, 843, 844],
+            AttributeType.span: [849, 850, 851, 852],
+        }
+
         self.snapshots = {}
 
         if auto_start:
             self.start()
+
+    def get_universal_controls_as_iterators(self, exclude=None):
+        """
+        Provides the Interface's universal controls as iterators per list
+        :param exclude: a single ID or iterable of IDs to exclude
+        :return: a dict mapping from AttributeType to lists of IDs
+        """
+        try:
+            i = iter(exclude)
+        except TypeError:
+            exclude = [exclude]
+
+        as_iters = {}
+        for attr_type, IDs in self.universal_controls.items():
+            as_iters[attr_type] = filter(lambda i: i not in exclude, IDs)
+
+        return as_iters
 
     def get_device(self, name):
         if self.input.name == name:

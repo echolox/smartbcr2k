@@ -6,10 +6,11 @@ per Target.
 """
 from time import time
 
+from util import eprint
 from .target import Target, ValueTarget
 from smci.view import View
 from devices.controls import Button
-from modifiers import AttributeType, AttributeDescriptor
+from util.attribute_mapping import AttributeType, AttributeDescriptor
 from util.scale import Scale
 
 LONGPRESS_TIME = 0.5  # in seconds
@@ -113,10 +114,21 @@ class ModView(Target):
     def construct_config_view(self):
         temp_view = View(self.parent.input, name="%s_ModConfigView" % self.modifier)
 
-        # TODO: Replace hardcoded dials with a definition of "universal dials" on the Device/Profile
-        type_IDs = {AttributeType.boolean: iter([841, 842, 843, 844]),
-                    AttributeType.span: iter([849, 850, 851, 852])
-                   }
+        ID = self.prev_view.find_IDs_by_target(self)[0]
+        temp_view.map_this(ID, self)
+        temp_view.configuration[ID]["toggle"] = False
+        temp_view.configuration[ID]["blink"] = True
+
+        # Filter out the ID we mapped to go back from the universal controls
+        # so we don't end up stuck in config view or mapping to that ID twice
+        type_IDs = self.parent.get_universal_controls_as_iterators(exclude=ID)
+
+        def map_modconfig_target(attr_desc, target):
+            try:
+                ID = next(type_IDs[attr_desc.type])
+                temp_view.map_this(ID, target)
+            except StopIteration:
+                eprint("Not enough universal controls available to make %s available in Config View" % target)
 
         # Construct a target that displays the Modifier's current value
         attribute_descriptor = AttributeDescriptor("value", -1.0, 1.0, float, AttributeType.span, True, None)
@@ -126,10 +138,9 @@ class ModView(Target):
             modconfig = ModConfig("value", self.parent, DummyModifier(), attribute_descriptor)
             self.modifier.target(modconfig, power=0.5)
             self.config_view_targets["value"] = modconfig
-        ID = next(type_IDs[attribute_descriptor.type])
-        temp_view.map_this(ID, modconfig)
+        map_modconfig_target(attribute_descriptor, modconfig)
 
-
+        # Construct targets for the configurable attributes of the Modifier
         for attribute_descriptor in self.modifier.attribute_configs:
             try:
                 modconfig = self.config_view_targets[attribute_descriptor.name]
@@ -137,13 +148,9 @@ class ModView(Target):
                 modconfig = ModConfig(attribute_descriptor.name, self.parent, self.modifier, attribute_descriptor)
                 self.config_view_targets[attribute_descriptor.name] = modconfig
 
-            ID = next(type_IDs[attribute_descriptor.type])
-            temp_view.map_this(ID, modconfig)
+            map_modconfig_target(attribute_descriptor, modconfig)
 
         # Map the button we came here with to get us back
-        ID = self.prev_view.find_IDs_by_target(self)[0]
-        temp_view.map_this(ID, self)
-        temp_view.configuration[ID]["toggle"] = False
         return temp_view
 
     def construct_power_view(self):

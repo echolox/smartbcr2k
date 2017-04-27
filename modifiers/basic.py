@@ -33,7 +33,9 @@ from collections import namedtuple
 from math import sin, cos, pi
 from random import random
 
-from .modifier import Modifier, AttributeDescriptor, AttributeType
+from .modifier import Modifier
+from util.attribute_mapping import AttributeType, AttributeDescriptor
+
 
 def bpm_sync(bpm, quarter_notes):
     """

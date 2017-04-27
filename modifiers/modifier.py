@@ -1,8 +1,7 @@
 from collections import defaultdict as ddict
-from collections import namedtuple
-from enum import Enum
 
 from util import eprint, clip
+from util.attribute_mapping import AttributeType, AttributeDescriptor
 
 MIN_MOD = 0
 MAX_MOD = 127
@@ -15,17 +14,6 @@ def modname_gen(modifier):
     counter += 1
     return "%s_%i" % (type(modifier).__name__, counter)
 
-
-# TODO: These will be useful for not just mapping Modifiers to some kind of Config View
-#       Move them out to somewhere else once that becomes apparent
-class AttributeType(Enum):
-    boolean = 0
-    span = 1
-
-
-AttributeDescriptor = namedtuple("AttributeDescriptor", ["name", "min", "max", "cast", "type", "readonly", "scale"])
-
-#####
 
 
 class Modifier(object):

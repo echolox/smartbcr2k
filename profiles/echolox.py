@@ -1,3 +1,4 @@
+from devices.controls import controls_to_IDs
 from modifiers import *
 from modifiers.basic import bpm_sync
 from smci import View
@@ -44,14 +45,10 @@ def create(i):
     bcr = i.input._o
 
     # Define universal controls
-
-
     i.universal_controls = {
-        AttributeType.boolean: [841, 842, 843, 844],
-        AttributeType.span: [849, 850, 851, 852],
+        AttributeType.boolean: controls_to_IDs(bcr.menu_rows(1)),
+        AttributeType.span: controls_to_IDs(bcr.dials),
     }
-
-
 
     s = Sine(frequency=bpm_sync(180, 4))
     sview = ModView("LFOSine_ModView", i, s)

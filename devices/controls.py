@@ -81,9 +81,11 @@ class Control(object):
         return self.__repr__()
 
 
+def controls_to_IDs(controls):
+    return [c.ID for c in controls]
+
 buttonconf = Control.default_conf
 buttonconf.update({"toggle": True})
-
 
 class Button(Control):
     """

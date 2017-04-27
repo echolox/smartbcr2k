@@ -28,6 +28,7 @@ class ModPower(ValueTarget):
         Forwards the value to the configured (output) Device with
         the transmitted value.
         """
+        print(self, sender, value, self.modifier)
         if value is not None:
             self.value = value
 

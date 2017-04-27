@@ -30,9 +30,6 @@ comment = {
     click the button of a macro dial to map that dial to the same Parameter you
     manipulated previously.
 
-    For the LFOs you need to make the function buttons (Store, Learn, Edit, Exit)
-    mappable using BCEdit. 
-
     If you want to support the development of this project check out my music
     on echolox.bandcamp.com or youtube.com/echolox and leave a few bucks if you like :)
     """,
@@ -141,22 +138,22 @@ def create(interface):
     lfos, lfo_views = [], []
     sa = util.split_append(lfos, lfo_views)
 
-    sa(create_lfo(i, Sine, "LFOSine", bcr.function_buttons[0]))
-    sa(create_lfo(i, Saw, "LFOSaw", bcr.function_buttons[1]))
-    sa(create_lfo(i, Square, "LFOSquare", bcr.function_buttons[2]))
-    sa(create_lfo(i, SampledRandom, "LFORandom", bcr.function_buttons[3]))
+    sa(create_lfo(i, Sine, "LFOSine", bcr.command_buttons[0]))
+    sa(create_lfo(i, Saw, "LFOSaw", bcr.command_buttons[1]))
+    sa(create_lfo(i, Square, "LFOSquare", bcr.command_buttons[2]))
+    sa(create_lfo(i, SampledRandom, "LFORandom", bcr.command_buttons[3]))
 
     """ GLOBAL PAGEFLIP
     Our simulated BCR2k provides us three more rows of dials than the real unit has.
     To switch between the two, we need to issue a pageflip command. Thankfully, there's
     a Target for that!
     
-    We map index to the bottom left button of the command buttons (bottom right of the unit).
+    We map index to the bottom left button of the function buttons (EDIT, originally).
     It is set to toggle. Otherwise you'd need to hold the button down to reach the second
     set of dials, which might also suit your workflow.
     """
     global_pageflip = PageFlip("Global Pageflip", i, bcr)
-    pageflip_button = bcr.command_buttons[2]
+    pageflip_button = bcr.function_buttons[2]
     view_init.map_this(pageflip_button.ID, global_pageflip)
     view_init.configuration[pageflip_button.ID]["toggle"] = True
 
@@ -271,8 +268,8 @@ def create(interface):
         view.configuration[pageflip_button.ID]["toggle"] = True
 
         # Modifiers
-        map_controls_to_targets(view, bcr.function_buttons, lfo_views)
-        configure_controls(view, bcr.function_buttons, "toggle", False)
+        map_controls_to_targets(view, bcr.command_buttons, lfo_views)
+        configure_controls(view, bcr.command_buttons, "toggle", False)
         ### END GLOBAL STUFF
 
 
@@ -308,7 +305,6 @@ def create(interface):
         fx_onoff = []
         for index, (channel, cc) in enumerate(gen_n(8), start=1):
             p = Parameter("T%i_FX%i_OnOff" % (track_index + 1, index), i, channel, cc, is_button=True)
-#            print(p, channel, cc)
             fx_onoff.append(p)
         map_controls_to_targets(view, bcr.menu_rows(1), fx_onoff)
         # SPECIAL CASE: Stutter and Repeater momentary
@@ -322,7 +318,6 @@ def create(interface):
         for index, (channel, cc) in enumerate(gen_n(48), start=1):
             p = Parameter("T%i_FX%i_%i" % (track_index + 1, (index - 1) / 6 + 1, subparam_index + 1), i, channel, cc)
             fx_params.append(p)
-#            print(p, channel, cc)
 
             subparam_index = (subparam_index + 1) % 6
         map_controls_to_targets(view, dials, fx_params)

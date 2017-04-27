@@ -68,7 +68,7 @@ class ModConfig(ValueTarget):
         """
         real_value = super().trigger(sender, value=value)
         corrected_value = self.map_from_control(value)
-        print("Setting %s to" % self.attribute.name, corrected_value)
+#        dprint("Setting %s to" % self.attribute.name, corrected_value)
         setattr(self.modifier, self.attribute.name, corrected_value)
 
         return real_value
@@ -95,6 +95,57 @@ class ModView(Target):
         self.time_pressed = None
         self.in_config_view = False
 
+        self.config_view_targets = {}
+        self.power_view_targets = {}
+
+    def construct_config_view(self):
+        temp_view = View(self.parent.input, name="%s_ModConfigView" % self.modifier)
+
+        # TODO: Replace hardcoded dials with a definition of "universal dials" on the Device/Profile
+        type_IDs = {AttributeType.boolean: iter([841, 842, 843, 844]),
+                    AttributeType.span: iter([849, 850, 851, 852])
+                   }
+
+        for attribute_descriptor in self.modifier.attribute_configs:
+            try:
+                modconfig = self.config_view_targets[attribute_descriptor.name]
+            except KeyError:
+                modconfig = ModConfig(attribute_descriptor.name, self.parent, self.modifier, attribute_descriptor)
+                self.config_view_targets[attribute_descriptor.name] = modconfig
+
+            ID = next(type_IDs[attribute_descriptor.type])
+            temp_view.map_this(ID, modconfig)
+
+        # Map the button we came here with to get us back
+        ID = self.prev_view.find_IDs_by_target(self)[0]
+        temp_view.map_this(ID, self)
+        temp_view.configuration[ID]["toggle"] = False
+        return temp_view
+
+    def construct_power_view(self):
+        """
+        Constructs and shows a view that let's the user adjust the power of the modifier
+        on the targets available in the current view.
+        """
+        temp_view = View(self.parent.input, name="%s_ModView" % self.modifier)
+
+        for ID, targets in self.prev_view.map.items():
+            for target in targets:
+                if isinstance(target, ValueTarget) and not isinstance(self.parent.input.controls[ID], Button):
+                    try:
+                        mp = self.power_view_targets[target]
+                    except KeyError:
+                        mp = ModPower("%s_%s_PWR" % (target, self.modifier), self.parent, self.modifier, target)
+                        self.power_view_targets[target] = mp
+                    temp_view.map[ID].append(mp)
+
+        # Map the button we came here with to get us back
+        ID = self.prev_view.find_IDs_by_target(self)[0]
+        temp_view.map[ID].append(self)
+        temp_view.configuration[ID]["toggle"] = False
+
+        return temp_view
+
     def trigger(self, sender, value=None):
         """
         Switch to the mod_config_view or mod_power_view based on how long the button
@@ -111,18 +162,29 @@ class ModView(Target):
             if not self.in_config_view:
                 self.time_pressed = time()
                 self.prev_view = self.parent.view
-                self.mod_power_view()
+                self.enter_power_view()
         elif value is 0:  # Ignore False, actually check for 0 (thanks Python)
             self.value = 0
             if not self.in_config_view:
                 if self.time_pressed and (time() - self.time_pressed) <= LONGPRESS_TIME:
-                    self.mod_config_view()
+                    self.enter_config_view()
                 else:
                     self.go_back()
             else:
                 self.go_back()
 
-    
+    def enter_power_view(self):
+        self.parent.switch_to_view(self.construct_power_view(), temp=True)
+
+    def enter_config_view(self):
+        """
+        Constructs and shows a view that let's the user configure the modifier attributes
+        itself (amplitude, frequeny ...) with a display of the waveform.
+        """
+        self.time_pressed = None
+        self.in_config_view = True
+        self.parent.switch_to_view(self.construct_config_view(), temp=True)
+
     def go_back(self):
         """
         Go back to the view that was shown before switching to the mod views.
@@ -130,50 +192,6 @@ class ModView(Target):
         self.time_pressed = None
         self.in_config_view = False
         self.parent.switch_to_view(self.prev_view)
-
-    def mod_config_view(self):
-        """
-        Constructs and shows a view that let's the user configure the modifier attributes
-        itself (amplitude, frequeny ...) with a display of the waveform.
-        """
-        self.time_pressed = None
-        self.in_config_view = True
-
-        temp_view = View(self.parent.input, name="%s_ModConfigView" % self.modifier)
-
-        # TODO: Replace hardcoded dials with a definition of "universal dials" on the Device/Profile
-        type_IDs = {AttributeType.boolean: iter([841, 842, 843, 844]),
-                    AttributeType.span: iter([849, 850, 851, 852])
-                   }
-
-        for attribute_descriptor in self.modifier.attribute_configs:
-            ID = next(type_IDs[attribute_descriptor.type])
-            temp_view.map_this(ID, ModConfig(attribute_descriptor.name, self.parent, self.modifier, attribute_descriptor))
-
-        ID = next(filter(lambda kv: self in kv[1], self.prev_view.map.items()))[0]
-        temp_view.map_this(ID, self)
-        temp_view.configuration[ID]["toggle"] = False
-        self.parent.switch_to_view(temp_view, temp=True)
-
-        print("IN CONFIG VIEW")
-
-    def mod_power_view(self):
-        """
-        Constructs and shows a view that let's the user adjust the power of the modifier
-        on the targets available in the current view.
-        """
-        temp_view = View(self.parent.input, name="%s_ModView" % self.modifier)
-
-        for ID, targets in self.prev_view.map.items():
-            for target in targets:
-                if isinstance(target, ValueTarget) and not isinstance(self.parent.input.controls[ID], Button):
-                    mp = ModPower("%s_%s_PWR" % (target, self.modifier), self.parent, self.modifier, target)
-                    temp_view.map[ID].append(mp)
-
-        ID = next(filter(lambda kv: self in kv[1], self.prev_view.map.items()))[0]
-        temp_view.map[ID].append(self)
-        temp_view.configuration[ID]["toggle"] = False
-        self.parent.switch_to_view(temp_view, temp=True)
 
     def serialize(self, *args, **kwargs):
         s = super().serialize(*args, **kwargs) 
@@ -191,7 +209,6 @@ class ModView(Target):
             self.modifier = self.parent.get_modifier(name)
         except KeyError:
             self.deferred = name
-
 
     @staticmethod
     def blank(parent):

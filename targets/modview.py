@@ -168,7 +168,7 @@ class ModView(Target):
                     except KeyError:
                         mp = ModPower("%s_%s_PWR" % (target, self.modifier), self.parent, self.modifier, target)
                         self.power_view_targets[target] = mp
-                    temp_view.map[ID].append(mp)
+                    temp_view.map_this(ID, mp)
 
         # Map the button we came here with to get us back
         ID = self.prev_view.find_IDs_by_target(self)[0]
@@ -182,6 +182,9 @@ class ModView(Target):
         Switch to the mod_config_view or mod_power_view based on how long the button
         is held/pushed.
         """
+        if value is False:
+            return None
+
         if self.modifier is None:
             self.link_to_mod()
 
@@ -239,6 +242,7 @@ class ModView(Target):
         try:
             self.modifier = self.parent.get_modifier(name)
         except KeyError:
+            print("Deferring resolution of modifier", name)
             self.deferred = name
 
     @staticmethod

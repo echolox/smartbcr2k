@@ -179,6 +179,17 @@ class Interface(object):
         # Universal Controls
         self.universal_controls = {AttributeType[at]: IDs for at, IDs in p["universal_controls"].items()}
 
+        # Create modifiers
+        for m in p["modifiers"]:
+            try:
+                M = get_modifier(m["type"])
+            except KeyError as e:
+                eprint("Mods", e)
+                continue
+            mod = M.blank()
+            mod.from_dict(m, self.targets)
+            self.add_modifier(mod)
+
         # Create views and their targets
         self.views = []
         self.view = None
@@ -200,18 +211,6 @@ class Interface(object):
                     target.from_dict(t)
                     self.add_target(target)
                 view.map_this(t["ID"], target)
-
-        # Create modifiers
-
-        for m in p["modifiers"]:
-            try:
-                M = get_modifier(m["type"])
-            except KeyError as e:
-                eprint("Mods", e)
-                continue
-            mod = M()
-            mod.from_dict(m, self.targets)
-            self.add_modifier(mod)
 
         # activate active view
         self.switch_to_view(p["active_view"])
@@ -377,11 +376,9 @@ class Interface(object):
         for target in targets:
             if unify(value) in target.trigger_vals:
                 # trigger will notify the output again if needed, we don't care
-                real_value = target.trigger(sender, value)
+                target.trigger(sender, value)
                 # but we need to reflect this value change on the input device
                 self.reflect_target_on_input(target)
-#                for input_ID in self.view.find_IDs_by_target(target):
-#                    self.input.set_control(input_ID, real_value)
 
     def target_triggered(self, target, value, sender):
         """

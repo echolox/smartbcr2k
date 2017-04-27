@@ -9,13 +9,6 @@ MAX_MOD = 127
 counter = 0
 
 
-def modname_gen(modifier):
-    global counter
-    counter += 1
-    return "%s_%i" % (type(modifier).__name__, counter)
-
-
-
 class Modifier(object):
     """
     A modifier keeps a list of targets which it periodically updates
@@ -28,11 +21,8 @@ class Modifier(object):
         AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span, False, None),
     )
 
-    def __init__(self, name=None, amplitude=MAX_MOD):
-        if name is None:
-            self.name = modname_gen(self)
-        else:
-            self.name = name
+    def __init__(self, name, amplitude=MAX_MOD):
+        self.name = name
         self._amplitude = amplitude  # The maximum value the Modifier will take on
         self._value = 0.0  # The actual current value of the Modifier at any given time
 
@@ -53,6 +43,7 @@ class Modifier(object):
         Resets the objects attributes based on the dictionary and hooks the Modifier up to
         all targets provided in the list all_targets.
         """
+        self.name = m["name"]
         self._amplitude = m["amplitude"]
         for target_name, power in m["targets"].items():
             try:
@@ -152,6 +143,10 @@ class Modifier(object):
         for t_name, value in d["targets"].items():
             target = i.targets[t_name]
             self.targets[target] = value
+
+    @classmethod
+    def blank(cls):
+        return cls("unnamed")
 
     def __repr__(self):
         return type(self).__name__

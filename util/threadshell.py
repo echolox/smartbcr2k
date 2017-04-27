@@ -14,9 +14,10 @@ from time import sleep
 from threading import Thread
 
 from colorama import Back, Fore, Style, init
+
 init()
 
-from util import dprint
+from util import eprint
 
 TICK_RATE = 1  # in ms  # set to 0 to just yield to other threads
 yield_thread = lambda: sleep(TICK_RATE / 1000.)
@@ -104,7 +105,7 @@ class Shell(object):
             try:
                 self._u()
             except Exception as e:
-                eprint(e)
+                eprint(self, e)
 
             # Yield thread time
             yield_thread()

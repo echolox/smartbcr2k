@@ -65,8 +65,8 @@ class Basic(Modifier):
         AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False, None),
     )
 
-    def __init__(self, frequency=0.25, positive=False, offset=0, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, name, frequency=0.25, positive=False, offset=0, **kwargs):
+        super().__init__(name, **kwargs)
         self.frequency = frequency
         self.positive = positive
         self.offset = offset
@@ -128,7 +128,6 @@ class Basic(Modifier):
         self.positive == False --> [-1, 1], wave(0) = 0
         """
         raise NotImplementedError
-
 
 class Sine(Basic):
     

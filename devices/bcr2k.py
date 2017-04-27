@@ -74,6 +74,10 @@ class BCR2k(Device):
         # noinspection PyAttributeOutsideInit
         ID, self.command_buttons = make_controls(ID, 4, Button, toggle=False)
 
+        # noinspection PyAttributeOutsideInit
+        ID, self.function_buttons = make_controls(ID, 4, Button, toggle=False)
+        print(self.function_buttons)
+
     def macro_bank(self, bank):
         """
         Returns a list of 8 macros on the zero-indexed bank (0, 1, 2, 3).

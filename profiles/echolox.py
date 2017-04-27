@@ -47,13 +47,38 @@ def create(i):
     i.add_to_universal_controls(AttributeType.boolean, bcr.menu_rows(1))
     i.add_to_universal_controls(AttributeType.span, bcr.dials)
 
-    s = Sine(frequency=bpm_sync(180, 4))
-    sview = ModView("LFOSine_ModView", i, s)
-    i.add_modifier(s)
-    modview_button = bcr.command_buttons[0]
-    i.view.map_this(modview_button.ID, sview)
-    i.view.configuration[modview_button.ID]["toggle"] = False
+    # SETUP MODIFIERS
+    sine = Sine("LFOSine")
+    saw = Saw("LFOSaw")
+    square = Square("LFOSquare")
+    random = SampledRandom("LFOSampledRandom")
 
+    view_sine = ModView("LFOSine_ModView", i, sine)
+    view_saw = ModView("LFOSaw_ModView", i, saw)
+    view_square = ModView("LFOSquare_ModView", i, square)
+    view_random = ModView("LFORandom_ModView", i, random)
+
+
+    i.add_modifier(sine)
+    i.add_modifier(saw)
+    i.add_modifier(square)
+    i.add_modifier(random)
+
+    sine_button = bcr.function_buttons[0]
+    i.view.map_this(sine_button.ID, view_sine)
+    i.view.configuration[sine_button.ID]["toggle"] = False
+
+    saw_button = bcr.function_buttons[1]
+    i.view.map_this(saw_button.ID, view_saw)
+    i.view.configuration[saw_button.ID]["toggle"] = False
+
+    square_button = bcr.function_buttons[2]
+    i.view.map_this(square_button.ID, view_square)
+    i.view.configuration[square_button.ID]["toggle"] = False
+
+    random_button = bcr.function_buttons[3]
+    i.view.map_this(random_button.ID, view_random)
+    i.view.configuration[random_button.ID]["toggle"] = False
 
     ### MACRO BANKS ###
     ## Dials: Parameters
@@ -202,7 +227,7 @@ def create(i):
         # Command Buttons:
         view.map_this(pageflip_button.ID, global_pageflip)
         view.configuration[pageflip_button.ID]["toggle"] = True
-        view.map_this(modview_button.ID, sview)
+        view.map_this(sine_button.ID, view_sine)
 
         i.views.append(view) 
         
@@ -242,8 +267,7 @@ def create(i):
         # Command Buttons:
         view.map_this(pageflip_button.ID, global_pageflip)
         view.configuration[pageflip_button.ID]["toggle"] = True
-        view.map_this(modview_button.ID, sview)
+        view.map_this(sine_button.ID, view_sine)
 
         i.views.append(view)
 
-    # TODO: Some buttons shouldn't be toggle in some views

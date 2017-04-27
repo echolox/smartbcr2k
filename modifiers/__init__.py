@@ -7,8 +7,6 @@ from .basic import *
 MODIFIERS = {C.__name__: C for C in globals().values() if isclass(C) and issubclass(C, Modifier)}
 del MODIFIERS["Modifier"]
 
-print(MODIFIERS)
-
 
 def get_modifier(name):
     """

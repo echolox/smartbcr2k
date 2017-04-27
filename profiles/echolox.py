@@ -45,10 +45,8 @@ def create(i):
     bcr = i.input._o
 
     # Define universal controls
-    i.universal_controls = {
-        AttributeType.boolean: controls_to_IDs(bcr.menu_rows(1)),
-        AttributeType.span: controls_to_IDs(bcr.dials),
-    }
+    i.add_to_universal_controls(AttributeType.boolean, bcr.menu_rows(1))
+    i.add_to_universal_controls(AttributeType.span, bcr.dials)
 
     s = Sine(frequency=bpm_sync(180, 4))
     sview = ModView("LFOSine_ModView", i, s)

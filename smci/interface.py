@@ -4,17 +4,18 @@ import traceback
 import json
 
 from threading import Thread
-from queue import Queue, Empty, Full
-from importlib import import_module
+from queue import Queue, Empty
+from collections import defaultdict as ddict
 
 from colorama import Fore, Back, Style
 
+from devices.controls import controls_to_IDs
 from util import keys_to_ints, unify, eprint, iprint
 from util.threadshell import Shell, yield_thread
 from util.attribute_mapping import AttributeType
 
 from targets import get_target, ValueTarget
-from devices import DeviceEvent, BCR2k, VirtualMidi
+from devices import DeviceEvent
 from modifiers import get_modifier
 
 from .view import View
@@ -66,7 +67,7 @@ class Interface(object):
         self.reset_recent_changes()
         self.last_modified_targets = set()
 
-        self.universal_controls = {at: [] for at in AttributeType}
+        self.universal_controls = ddict(list)  # AttributeType -> list of IDs
 
         self.snapshots = {}
 
@@ -89,6 +90,14 @@ class Interface(object):
             as_iters[attr_type] = filter(lambda i: i not in exclude, IDs)
 
         return as_iters
+
+    def add_to_universal_controls(self, attr_type, controls):
+        try:
+            i = iter(controls)
+        except TypeError:
+            exclude = [controls]
+
+        self.universal_controls[attr_type].extend(controls_to_IDs(controls))
 
     def get_device(self, name):
         if self.input.name == name:

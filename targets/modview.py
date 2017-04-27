@@ -245,6 +245,6 @@ class ModView(Target):
             print("Deferring resolution of modifier", name)
             self.deferred = name
 
-    @staticmethod
-    def blank(parent):
-        return ModView("unnamed", parent, None)
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent, None)

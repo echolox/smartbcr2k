@@ -36,9 +36,9 @@ class Target(object):
 
     # @Robustness: Most of the overrides of this method are trivial, find
     #              a way to have them happen automatically?
-    @staticmethod
-    def blank(parent):
-        return Target("unnamed", parent)
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent)
 
     def is_connected_to_output(self, ID):
         return False

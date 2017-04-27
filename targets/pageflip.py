@@ -22,8 +22,8 @@ class PageFlip(Target):
         super().from_dict(d)
         self.device = self.parent.get_device(d["device"])
 
-    @staticmethod
-    def blank(parent):
-        return PageFlip("unnamed", parent, parent.input)
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent, parent.input)
 
 

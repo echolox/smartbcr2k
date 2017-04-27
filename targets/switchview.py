@@ -8,8 +8,8 @@ class SwitchView(Target):
 
     trigger_vals = [127]
 
-    def __init__(self, name, parent, view, **kwargs):
-        super().__init__(name, parent, **kwargs)
+    def __init__(self, name, parent, view):
+        super().__init__(name, parent)
         if type(view) == str:
             self.view_name = view
         else:
@@ -28,8 +28,8 @@ class SwitchView(Target):
         super(SwitchView, self).from_dict(d)
         self.view_name = d["view"]
 
-    @staticmethod
-    def blank(parent):
-        return SwitchView("unnamed", parent, "")
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent, "")
 
 

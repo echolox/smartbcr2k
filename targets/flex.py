@@ -9,6 +9,7 @@ it was those targets.
 On a BCR2k it makes sense to map a Flex Target to a Macro Dial and the respective
 FlexSetter to the button action (momentary) on that same dial.
 """
+from util import eprint
 from .target import Target, ValueTarget
 
 
@@ -18,14 +19,15 @@ class FlexSetter(Target):
     targets from the interface and provides them to the Flex Target.
     """
 
-    def __init__(self, name, parent, flex_parameter, *args, **kwargs):
-        super().__init__(name, parent, *args, **kwargs)
+    def __init__(self, name, parent, flex_parameter):
+        super().__init__(name, parent)
         self.flex = flex_parameter
         self.deferred = None
 
     def trigger(self, sender, value=None):
         if self.deferred:
-            self.flex = self.parent.targets[d[self.deferred]]
+            self.flex = self.parent.targets[self.deferred]
+            print(">>> Resolved deferred flex link", self, self.flex)
             self.deferred = None
 
         if value:
@@ -44,9 +46,9 @@ class FlexSetter(Target):
             eprint("Flex target %s for %s not yet instantiated. Defering until first trigger")
             self.deferred = d["flex"]
 
-    @staticmethod
-    def blank(parent):
-        return FlexSetter("unnamed", parent, None)
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent, None)
 
 
 class FlexParameter(ValueTarget):
@@ -91,10 +93,6 @@ class FlexParameter(ValueTarget):
         except StopIteration:
             # We are not linked to anything
             return 0 
-
-    @staticmethod
-    def blank(parent):
-        return FlexParameter("unnamed", parent)
 
     def is_connected_to(self, target):
         return target in self.parameters

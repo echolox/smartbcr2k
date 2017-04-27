@@ -57,9 +57,9 @@ class Parameter(ValueTarget):
         self.value = d["value"]
         self.is_button = d["is_button"]
 
-    @staticmethod
-    def blank(parent):
-        return Parameter("unnamed", parent, 1, 0)
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent, 1, 0)
 
     def is_connected_to_output(self, channel, cc):
         return channel == self.channel and cc == self.cc

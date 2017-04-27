@@ -11,6 +11,7 @@ Short-press to load, long-press to save.
 On a BCR2k it makes sense to map a Selector to a Macro Dial and the respective
 Button to the button action (momentary) on that same dial.
 """
+from util import eprint
 from .target import Target, ValueTarget
 from time import time
 
@@ -57,9 +58,9 @@ class SnapshotButton(Target):
             eprint("Selector target %s for %s not yet instantiated. Defering until first trigger")
             self.deferred = d["flex"]
 
-    @staticmethod
-    def blank(parent):
-        return SnapshotButton("unnamed", parent, None)
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent, None)
 
 
 class SnapshotSelector(ValueTarget):
@@ -73,7 +74,7 @@ class SnapshotSelector(ValueTarget):
     def issue_save(self):
         self.parent.save_snapshot(self.value)
 
-    @staticmethod
-    def blank(parent):
-        return SnapshotSelector("unnamed", parent)
+    @classmethod
+    def blank(cls, parent):
+        return cls("unnamed", parent)
 

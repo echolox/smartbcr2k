@@ -1,4 +1,3 @@
-from devices.controls import controls_to_IDs
 from modifiers import *
 from modifiers.basic import bpm_sync
 from smci import View

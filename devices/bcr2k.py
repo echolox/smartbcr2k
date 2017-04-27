@@ -12,13 +12,7 @@ class BCR2k(Device):
     - Set all value ranges from 0 to 127
     """
 
-    def __init__(self, channel_offset=7, *args, **kwargs):
-        # Typically you would configure your BCR2k to start on channel 1
-        # Since I don't (or maybe didn't depending on when you read this)
-        # I needed a way to offset to channel 7 where my main page on the
-        # device starts.
-        self.channel_offset = channel_offset
-
+    def __init__(self, *args, **kwargs):
         # Don't forward the auto_start flag to the parent
         auto_start = kwargs.get("auto_start", False)
         try:
@@ -35,9 +29,7 @@ class BCR2k(Device):
             self.start()
 
     def setup_controls(self):
-        ID = ccc2ID(self.channel_offset, 0) + 1  # Because I use Channel 7, starting with cc 1
-
-        # That's gonna change eventually
+        ID = ccc2ID(1, 1)
 
         # A helper function to create n controls of the given Class with some options
         # Returns a list of newly created controls

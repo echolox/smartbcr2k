@@ -49,7 +49,7 @@ SMCI -+                    +-- DAW
 In Ableton Live it would look like this. Notice how we don't directly connect to the BCR2000 ports:
 ![Ableton Live Midi Screenshot](https://cloud.githubusercontent.com/assets/10747793/25379343/fceb28a8-29ac-11e7-8082-0958e5a531c3.png)
 
-You will also need to dedicate at least one page on your BCR2k (used here as an example) to the SMCI. Map all your controls in this order: Macro Dials, Macro Dial Buttons, Buttons, Main Dials, Bottom Right Buttons, starting with CC1 und Channel 7 (eventually 1, my config is a little old). The last Button on the very bottom right should end up with CC 108. See the [definition of the BCR2k](devices/bcr2k.py) device for further details.
+You will also need to dedicate at least one page on your BCR2k (used here as an example) to the SMCI. Map all your controls in this order: Macro Dials, Macro Dial Buttons, Buttons, Main Dials, Bottom Right Buttons, starting with CC1 und Channel 1. The last Button on the very bottom right should end up with CC 108. See the [definition of the BCR2k](devices/bcr2k.py) device for further details.
 
 Now you should be able to start the main script. I'm providing my own profile that has a bunch of features already configured. Just start it by running
 ```

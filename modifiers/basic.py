@@ -57,10 +57,11 @@ class Basic(Modifier):
     """
 
     attribute_configs = (
-        AttributeDescriptor("frequency", 0.01, 10, float, AttributeType.span),
-        AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean),
-        AttributeDescriptor("offset", -0.5, 0.5, float, AttributeType.span),
-        AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span),
+        AttributeDescriptor("amplitude",    0, 127, int,   AttributeType.span, False),
+        AttributeDescriptor("frequency", 0.01,  10, float, AttributeType.span, False),
+        AttributeDescriptor("offset",    -0.5, 0.5, float, AttributeType.span, False),
+
+        AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False),
     )
 
     def __init__(self, frequency=0.25, positive=False, offset=0, **kwargs):

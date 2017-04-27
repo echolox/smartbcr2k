@@ -108,9 +108,9 @@ class ValueTarget(Target):
                                     # to modify the center value
 
     def trigger(self, sender, value=None):
-        super().trigger(sender, value)
         if value is not None:
             self.value = value
+        super().trigger(sender, self.value)
 
         return self.value
 

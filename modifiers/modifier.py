@@ -19,7 +19,7 @@ class AttributeType(Enum):
     boolean = 0
     span = 1
 
-AttributeDescriptor = namedtuple("AttributeDescriptor", ["name", "min", "max", "cast", "type"])
+AttributeDescriptor = namedtuple("AttributeDescriptor", ["name", "min", "max", "cast", "type", "readonly"])
 
 
 class Modifier(object):
@@ -31,7 +31,7 @@ class Modifier(object):
     method calculate.
     """
     attribute_configs = (
-        AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span),
+        AttributeDescriptor("amplitude", 0, 127, int, AttributeType.span, False),
     )
 
     def __init__(self, name=None, amplitude=MAX_MOD):
@@ -40,7 +40,7 @@ class Modifier(object):
         else:
             self.name = name
         self._amplitude = amplitude  # The maximum value the Modifier will take on
-        self._value = 0  # The actual current value of the Modifier at any given time
+        self._value = 0.0  # The actual current value of the Modifier at any given time
 
         self.targets = ddict(lambda: 0.0)  # target object -> [-1, 1]
 

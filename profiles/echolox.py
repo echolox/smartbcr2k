@@ -43,6 +43,16 @@ comment = {
 def create(i):
     bcr = i.input._o
 
+    # Define universal controls
+
+
+    i.universal_controls = {
+        AttributeType.boolean: [841, 842, 843, 844],
+        AttributeType.span: [849, 850, 851, 852],
+    }
+
+
+
     s = Sine(frequency=bpm_sync(180, 4))
     sview = ModView("LFOSine_ModView", i, s)
     i.add_modifier(s)

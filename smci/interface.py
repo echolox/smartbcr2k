@@ -66,10 +66,7 @@ class Interface(object):
         self.reset_recent_changes()
         self.last_modified_targets = set()
 
-        self.universal_controls = {
-            AttributeType.boolean: [841, 842, 843, 844],
-            AttributeType.span: [849, 850, 851, 852],
-        }
+        self.universal_controls = {at: [] for at in AttributeType}
 
         self.snapshots = {}
 
@@ -141,9 +138,11 @@ class Interface(object):
              "next_cc": self.parameter_maker.next_cc,
              "next_view_index": self.view_maker.next_index,
              "active_view": self.view.name,
+             "universal_controls": {at.name: IDs for at, IDs in self.universal_controls.items()},
              "views": [],
              "modifiers": [],
              "name": "Default Profile"}
+        print(p["universal_controls"])
         
         for view in self.views:
             v = {"name": view.name,
@@ -167,6 +166,9 @@ class Interface(object):
         # Set next_ values
         self.parameter_maker.next_cc = p["next_cc"]
         self.view_maker.next_index = p["next_view_index"]
+
+        # Universal Controls
+        self.universal_controls = {AttributeType[at]: IDs for at, IDs in p["universal_controls"].items()}
 
         # Create views and their targets
         self.views = []

@@ -1,16 +1,18 @@
+import statistics
 import time
 
 from enum import Enum
-from queue import Full
+from queue import Full, Queue
 from threading import Thread
 
 import rtmidi
-from rtmidi.midiconstants import CONTROL_CHANGE
+from rtmidi.midiconstants import CONTROL_CHANGE, SONG_START, SONG_CONTINUE, SONG_STOP, TIMING_CLOCK
 from rtmidi.midiutil import open_midioutput, open_midiinput, get_api_from_environment, \
     list_output_ports, list_input_ports
 
 from util import eprint
 from util.threadshell import yield_thread
+
 
 BLINK_INTERVAL = 0.3  # in seconds
 
@@ -348,6 +350,7 @@ class Device(Port):
         Handles a Midi event from the input device.
         """
         message, deltatime = event
+        # TODO: Actually figure out whether the message is a CC, Note, Timing or something else
         channel_byte, cc, value = message
         channel = (channel_byte - CONTROL_CHANGE) + 1
         ID = ccc2ID(channel, cc, self.page)
@@ -374,6 +377,10 @@ class Device(Port):
 
 class OutputEvent(Enum):
     CC = 1
+    ClockStart = 2
+    ClockContinue = 3
+    ClockStop = 4
+    ClockQuarterTick = 5
 
 
 class OutputPort(Port):
@@ -386,6 +393,9 @@ class OutputPort(Port):
     def __init__(self, *args, **kwargs):
         self.last_sent_values = {}
         super().__init__(*args, **kwargs)
+        self.input.ignore_types(timing=False)
+
+        self.clock_count = 0
 
     def update(self):
         # Handle midi events
@@ -409,26 +419,50 @@ class OutputPort(Port):
         Handles a Midi event from the DAW
         """
         message, deltatime = event
-        channel, cc, value = message
-        ID = ccc2ID(channel, cc)
 
-        worth_reporting = False
-        try:
-            if value != self.last_sent_values[ID]:
-                worth_reporting = True
-        except KeyError:
-            pass
 
-        if worth_reporting:
-            self.received(channel, cc, value)
+        t = message[0]
+        if t == SONG_START:
+            self.clock_count = 0
+            self.inform_listeners(OutputEvent.ClockStart)
+        elif t == SONG_CONTINUE:
+            self.inform_listeners(OutputEvent.ClockContinue)
+        elif t == SONG_STOP:
+            self.inform_listeners(OutputEvent.ClockStop)
+        elif t == TIMING_CLOCK:
+            self.clock_count += 1
+            if (self.clock_count == 24):
+                self.clock_count = 0
+                self.inform_listeners(OutputEvent.ClockQuarterTick)
+
+        else:  # TODO: Filter for Note events
+            try:
+                channel, cc, value = message
+                ID = ccc2ID(channel, cc)
+
+                worth_reporting = False
+                try:
+                    if value != self.last_sent_values[ID]:
+                        worth_reporting = True
+                except KeyError:
+                    pass
+
+                if worth_reporting:
+                    self.received(channel, cc, value)
+            except Exception as e:
+                eprint(self, e)
 
     def received(self, channel, cc, value):
         """
         Inform the observers that a control value has changed by issuing
         an OutputEvent.CC.
         """
+        self.inform_listeners(OutputEvent.CC, self, channel, cc, value)
+
+    def inform_listeners(self, *data):
         for listener in self.listener_qs:
             try:
-                listener.put_nowait((OutputEvent.CC, self, channel, cc, value))
+                listener.put_nowait(data)
             except Full:
                 print(listener, "is full")
+

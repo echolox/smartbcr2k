@@ -413,16 +413,15 @@ class OutputPort(Port):
         """
         message, deltatime = event
 
-
-        t = message[0]
-        if t == SONG_START:
+        status_byte = message[0]
+        if status_byte == SONG_START:
             self.clock_count = 0
             self.inform_listeners(OutputEvent.ClockStart)
-        elif t == SONG_CONTINUE:
+        elif status_byte == SONG_CONTINUE:
             self.inform_listeners(OutputEvent.ClockContinue)
-        elif t == SONG_STOP:
+        elif status_byte == SONG_STOP:
             self.inform_listeners(OutputEvent.ClockStop)
-        elif t == TIMING_CLOCK:
+        elif status_byte == TIMING_CLOCK:
             self.clock_count += 1
             if (self.clock_count == 24):
                 self.clock_count = 0

@@ -194,20 +194,21 @@ def create(interface):
     i.parameter_maker.skip(8)
 
     # Collect all the Targets that the BCR2k's macros are mapped to, starting with the ones we already did
-    macro_targets = flex_params
+    macro_dial_targets = [snpsel] + flex_params
+    macro_button_targets = [snpset] + flex_setters
 
     # BANKS 2-4: Good old CC Parameters
     # 2: Parameters (Patch selection)
     for macro in bcr.macro_bank(1):
-        macro_targets.append(i.quick_parameter(macro.ID))
+        macro_dial_targets.append(i.quick_parameter(macro.ID))
 
     # 3: Parameters (Reverb Send)
     for macro in bcr.macro_bank(2):
-        macro_targets.append(i.quick_parameter(macro.ID))
+        macro_dial_targets.append(i.quick_parameter(macro.ID))
 
     # 4: Parameters (Delay Send)
     for macro in bcr.macro_bank(3):
-        macro_targets.append(i.quick_parameter(macro.ID))
+        macro_dial_targets.append(i.quick_parameter(macro.ID))
 
 
     """ INIT VIEW  DIALS
@@ -265,9 +266,9 @@ def create(interface):
         ##        or at least a subset of views.
 
         # Macros
-        for dial, target in zip(bcr.macros, macro_targets):
+        for dial, target in zip(bcr.macros, macro_dial_targets):
             view.map_this(dial.ID, target)
-        for mbutton, target in zip(bcr.macro_bank_buttons(0), flex_setters):
+        for mbutton, target in zip(bcr.macro_bank_buttons(0), macro_button_targets):
             view.map_this(mbutton.ID, target)
             view.configuration[mbutton.ID]["toggle"] = False
 

@@ -14,5 +14,5 @@ class BPM(ValueTarget):
 
     @value.setter
     def value(self, value):
-        self._value = int(clip(self.minimum, self.maximum, value + self.minimum + sum(self.modifiers.values())))
+        ValueTarget.value.fset(self, value)  # Pycharm complains here but it's correct
         self.clock.bpm = self._value

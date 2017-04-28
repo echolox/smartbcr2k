@@ -116,12 +116,11 @@ class ValueTarget(Target):
 
     @property
     def value(self):
-        return int(clip(self.minimum, self.maximum,
-                        self._value + sum(self.modifiers.values())))
+        return int(clip(self.minimum, self.maximum, self._value - self.minimum + sum(self.modifiers.values())))
 
     @value.setter
     def value(self, value):
-        self._value = value
+        self._value = int(clip(self.minimum, self.maximum, value + self.minimum))
 
     def save(self):
         # TODO: Annotate which attributes to save and load in Class list

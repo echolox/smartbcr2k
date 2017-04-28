@@ -1,13 +1,12 @@
-import statistics
 import time
 
 from enum import Enum
-from queue import Full, Queue
+from queue import Full
 from threading import Thread
 
 import rtmidi
 from rtmidi.midiconstants import CONTROL_CHANGE, SONG_START, SONG_CONTINUE, SONG_STOP, TIMING_CLOCK
-from rtmidi.midiutil import open_midioutput, open_midiinput, get_api_from_environment, \
+from rtmidi.midiutil import open_midioutput, open_midiport, open_midiinput, get_api_from_environment, \
     list_output_ports, list_input_ports
 
 from util import eprint
@@ -24,27 +23,21 @@ class PortNotFoundError(Exception):
 def open_port_by_name(name, inout):
     if inout == "input":
         # noinspection PyUnresolvedReferences,PyUnresolvedReferences
-        midiio = rtmidi.MidiIn(get_api_from_environment(rtmidi.API_UNSPECIFIED))
-        open_func = open_midiinput
+        ports = rtmidi.MidiIn(get_api_from_environment(rtmidi.API_UNSPECIFIED)).get_ports()
     elif inout == "output":
         # noinspection PyUnresolvedReferences,PyUnresolvedReferences
-        midiio = rtmidi.MidiOut(get_api_from_environment(rtmidi.API_UNSPECIFIED))
-        open_func = open_midioutput
+        ports = rtmidi.MidiOut(get_api_from_environment(rtmidi.API_UNSPECIFIED)).get_ports()
     else:
         eprint("Call with either input or output as inout argument")
         raise PortNotFoundError
 
-    ports = midiio.get_ports()
-    # noinspection PyUnresolvedReferences
-    type_ = " input" if isinstance(midiio, rtmidi.MidiIn) else " ouput"
-
     if ports:
         for portno, pname in enumerate(ports):
             if name.lower() in pname.lower():
-                return open_func(portno)
+                return open_midiport(portno, inout)
         raise PortNotFoundError
     else:
-        print("No MIDI{} ports found.".format(type_))
+        print("No MIDI {} ports found.".format(inout))
         raise PortNotFoundError
 
 

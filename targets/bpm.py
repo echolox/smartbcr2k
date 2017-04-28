@@ -1,6 +1,4 @@
 from targets import ValueTarget
-from util import clip
-
 
 class BPM(ValueTarget):
 
@@ -14,5 +12,7 @@ class BPM(ValueTarget):
 
     @value.setter
     def value(self, value):
+        before = self._value
         ValueTarget.value.fset(self, value)  # Pycharm complains here but it's correct
-        self.clock.bpm = self._value
+        if before != self._value:
+            self.clock.bpm = self._value

@@ -13,6 +13,14 @@ class Clock(object):
 
         self.measure_count = 0
 
+    @property
+    def bpm(self):
+        return self._bpm
+
+    @bpm.setter
+    def bpm(self, value):
+        self._bpm = value
+
     def start(self):
         self.measure_count = 0
         self.tick_count = 0

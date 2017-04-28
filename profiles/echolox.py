@@ -1,7 +1,7 @@
 import util
 
 from smci import View
-from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector
+from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector, BPM
 from modifiers.modifier import AttributeType
 from modifiers.basic import Basic, Sine, Square, Saw, SampledRandom
 from modifiers.stepsequencer import StepSequencer
@@ -217,6 +217,9 @@ def create(interface):
     """
     for dial in bcr.dials:
         i.quick_parameter(dial.ID)
+
+    bpm = BPM("BPM", i)
+    view_init.map_this(bcr.dialsc[0][2].ID, bpm)
 
 
     """ MENU BUTTONS: Let's get complicated!

@@ -460,7 +460,11 @@ class Interface(object):
                 except AttributeError:
                     continue
                 self._set_control(ID, target.value, force=True)
-                untouched.remove(ID)
+                try:
+                    untouched.remove(ID)
+                except KeyError:
+                    # IDs can be mapped multiple times
+                    pass
 
         for ID in untouched:
             self._set_control(ID, 0, force=True)

@@ -370,10 +370,6 @@ class Device(Port):
 
 class OutputEvent(Enum):
     CC = 1
-    ClockStart = 2
-    ClockContinue = 3
-    ClockStop = 4
-    ClockQuarterTick = 5
 
 
 class OutputPort(Port):
@@ -388,7 +384,7 @@ class OutputPort(Port):
         super().__init__(*args, **kwargs)
         self.input.ignore_types(timing=False)
 
-        self.clock_count = 0
+        self.clock = None
 
     def update(self):
         # Handle midi events
@@ -405,7 +401,6 @@ class OutputPort(Port):
         channel_byte = CONTROL_CHANGE | (channel - 1)
         self.output.send_message([channel_byte, cc, value])
 
-    #        print(channel, cc, value)
 
     def input_callback(self, event):
         """
@@ -415,17 +410,13 @@ class OutputPort(Port):
 
         status_byte = message[0]
         if status_byte == SONG_START:
-            self.clock_count = 0
-            self.inform_listeners(OutputEvent.ClockStart)
+            self.clock.start()
         elif status_byte == SONG_CONTINUE:
-            self.inform_listeners(OutputEvent.ClockContinue)
+            self.clock.unpause()
         elif status_byte == SONG_STOP:
-            self.inform_listeners(OutputEvent.ClockStop)
+            self.clock.stop()
         elif status_byte == TIMING_CLOCK:
-            self.clock_count += 1
-            if (self.clock_count == 24):
-                self.clock_count = 0
-                self.inform_listeners(OutputEvent.ClockQuarterTick)
+            self.clock.tick()
 
         else:  # TODO: Filter for Note events
             try:

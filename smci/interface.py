@@ -1,6 +1,5 @@
 import os
 import time
-import traceback
 import json
 
 from threading import Thread
@@ -15,17 +14,18 @@ from util.threadshell import Shell, yield_thread
 from util.attribute_mapping import AttributeType
 
 from targets import get_target, ValueTarget
-from devices import DeviceEvent
+from devices import DeviceEvent, OutputEvent
 from modifiers import get_modifier
 
 from .view import View
 from .makers import ParameterMaker, ViewMaker
+from .clock import Clock
 
 
 class Interface(object):
     """
     The Interface connects an input device with an output device by tunneling
-    transmitted values from the input through its currently triggerive View.
+    transmitted values from the input through its currently active View.
     This view can transform CC messages, issue commands like switching to a
     different View or other meta functions. For a simple mapped CC parameter,
     the - possibly modified - value is sent to the Interface's output device.
@@ -49,8 +49,14 @@ class Interface(object):
         self.view = initview if initview else View(self.input, "Init")
         self.views = [self.view]
 
-        self.device_event_dispatch = {
+        # TODO: Make a clock
+        self.clock = Clock(self)
+        self.output.clock = self.clock
+
+        self.event_dispatch = {
             DeviceEvent.CC: self.device_event_callback,
+
+            OutputEvent.CC: self.device_event_callback,
         }
         self.device_q = Queue()
         self.input.add_listener(self.device_q)
@@ -502,7 +508,7 @@ class Interface(object):
                 event, *data = self.device_q.get_nowait()
                 max_messages -= 1
                 try:
-                    func = self.device_event_dispatch[event]
+                    func = self.event_dispatch[event]
                 except KeyError:
                     eprint(self, "Cannot handle event of type", event)
                     continue

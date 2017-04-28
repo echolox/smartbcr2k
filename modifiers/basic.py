@@ -170,7 +170,7 @@ class Basic(Modifier):
         m["frequency"] = self.frequency
         m["positive"] = self.positive
         m["offset"] = self.offset
-        m["lfo"] = self.lfo.__class__.__name__
+        m["lfo"] = self._lfo.__class__.__name__
         return m
 
     def from_dict(self, m, *args, **kwargs):

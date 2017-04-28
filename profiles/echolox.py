@@ -4,6 +4,7 @@ from smci import View
 from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector
 from modifiers.modifier import AttributeType
 from modifiers.basic import Basic, Sine, Square, Saw, SampledRandom
+from modifiers.stepsequencer import StepSequencer
 
 comment = {
     "author": "Matt 'Echolox' Duncan",
@@ -141,8 +142,14 @@ def create(interface):
 
     sa(create_lfo(i, "LFOSine", bcr.command_buttons[0], Sine))
     sa(create_lfo(i, "LFOSaw", bcr.command_buttons[1], Saw))
-    sa(create_lfo(i, "LFOSquare", bcr.command_buttons[2], Square))
-    sa(create_lfo(i, "LFORandom", bcr.command_buttons[3], SampledRandom))
+    sa(create_lfo(i, "LFORandom", bcr.command_buttons[2], SampledRandom))
+
+    steps = StepSequencer("StepSequencer")
+    steps_view = ModView("StepSequencer_ModView", i, steps)
+    i.add_modifier(steps)
+    view_init.map_this(bcr.command_buttons[3].ID, steps_view)
+    view_init.configuration[bcr.command_buttons[3].ID]["toggle"] = False
+
 
     """ GLOBAL PAGEFLIP
     Our simulated BCR2k provides us three more rows of dials than the real unit has.
@@ -271,7 +278,10 @@ def create(interface):
         # Modifiers
         map_controls_to_targets(view, bcr.command_buttons, lfo_views)
         configure_controls(view, bcr.command_buttons, "toggle", False)
-        ### END GLOBAL STUFF
+
+        view.map_this(bcr.command_buttons[3].ID, steps_view)
+        view.configuration[bcr.command_buttons[3].ID]["toggle"] = False
+    ### END GLOBAL STUFF
 
 
     ### We start by going track by track and mapping the FX activators, FX parameters and of course

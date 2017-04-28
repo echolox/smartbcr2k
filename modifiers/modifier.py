@@ -1,7 +1,7 @@
 from collections import defaultdict as ddict
 
 from util import eprint, clip
-from util.attribute_mapping import AttributeType, AttributeDescriptor
+from util.attribute_mapping import AttributeType, AttributeDescriptor, Configurable
 
 MIN_MOD = 0
 MAX_MOD = 127
@@ -9,7 +9,7 @@ MAX_MOD = 127
 counter = 0
 
 
-class Modifier(object):
+class Modifier(Configurable):
     """
     A modifier keeps a list of targets which it periodically updates
     with a value to modify the targets true value with. Think of LFOs.

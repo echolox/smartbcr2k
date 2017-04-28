@@ -30,13 +30,16 @@ For musically synced frequencies, calculate the frequency to set using the bpm_s
 function which receives the bpm and the number of quarter notes per cycle.
 """
 from collections import namedtuple
+from inspect import isclass
 from math import sin, cos, pi
 from random import random
 
+from util import eprint
 from .modifier import Modifier
 from util.attribute_mapping import AttributeType, AttributeDescriptor
 
 
+# @TODO Move to util?
 def bpm_sync(bpm, quarter_notes):
     """
     Turns a BPM value and a length given in beats into a frequency usable by a modifier.
@@ -48,9 +51,87 @@ def bpm_sync(bpm, quarter_notes):
     return bpm / 60.0 / quarter_notes
 
 
+class LFO(object):
+    def wave(self, t, positive=False):
+        """
+        t in [0, 1), which is one cycle. Implement in such a way that:
+        positive == True ---> [ 0, 1], wave(0) = 0
+        positive == False --> [-1, 1], wave(0) = 0
+        """
+        raise NotImplementedError
+
+
+class Sine(LFO):
+    def wave(self, t, positive=False):
+        if positive:
+            return (sin(t * 2 * pi) + 1) / 2
+        else:
+            return -cos(t * 2 * pi)
+
+
+class Saw(LFO):
+    def wave(self, t, positive=False):
+        if positive:
+            return t
+        else:
+            return t * 2 - 1
+
+
+class Triangle(LFO):
+    def wave(self, t, positive=False):
+        if positive:
+            if t < 0.5:
+                return 2 * t
+            else:
+                return 2 - 2 * t
+        else:
+            if t < 0.25:
+                return t * 4
+            elif t < 0.75:
+                return 1 - 4 * (t - 0.25)
+            else:
+                return 4 * (t - 0.75) - 1
+
+
+class Square(LFO):
+    def wave(self, t, positive=False):
+        if positive:
+            return int(t < 0.25 or t > 0.75)
+        else:
+            return int(t < 0.5) * 2 - 1
+
+
+class SampledRandom(LFO):
+    last_t = 0
+    current_value = 0
+    def wave(self, t, positive=False):
+        if t <= self.last_t:
+            if positive:
+                self.current_value = random()
+            else:
+                self.current_value = random() * 2 - 1
+
+        self.last_t = t
+        return self.current_value
+
+
+
+
+#### Define all LFOs above this line!! ####
+
+# We list them explicitly instead of gathering them from locals() to define an order
+LFOs = [Sine, Saw, Triangle, Square, SampledRandom]
+def pick_lfo_from_list(lfo, lfos):
+    return next(filter(lambda l: type(l) == lfo, lfos))
+
+def pick_lfo_from_list_by_name(name, lfos):
+    return next(filter(lambda l: type(l).__name__ == name, lfos))
+
+
 class Basic(Modifier):
     """
-    A basic modulator that just needs a frequency to operate.
+    A basic modulator that just needs a frequency to operate. It can choose from a list
+    of LFOs at any time.
     
     :param frequency: in Hz
     :param positive: centered mode vs positive mode (see module docstring)
@@ -65,11 +146,13 @@ class Basic(Modifier):
         AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False, None),
     )
 
-    def __init__(self, name, frequency=0.25, positive=False, offset=0, **kwargs):
+    def __init__(self, name, frequency=0.25, positive=False, offset=0, init_lfo=Sine, **kwargs):
         super().__init__(name, **kwargs)
         self.frequency = frequency
         self.positive = positive
         self.offset = offset
+        self.lfos = [L() for L in LFOs]
+        self.lfo = pick_lfo_from_list(init_lfo, self.lfos)
 
     def serialize(self):
         """
@@ -80,6 +163,7 @@ class Basic(Modifier):
         m["frequency"] = self.frequency
         m["positive"] = self.positive
         m["offset"] = self.offset
+        m["lfo"] = self.lfo.__class__.__name__
         return m
 
     def from_dict(self, m, *args, **kwargs):
@@ -93,12 +177,14 @@ class Basic(Modifier):
         self.frequency = m["frequency"]
         self.positive = m["positive"]
         self.offset = m["offset"]
+        self.lfo = pick_lfo_from_list_by_name(m["lfo"], self.lfos)
 
     def save(self):
         d = super().save()
         d["frequency"] = self.frequency
         d["positive"] = self.positive
         d["offset"] = self.offset
+        d["lfo"] = self.lfo.__class__.__name__
         return d
 
     def load(self, d, i):
@@ -106,6 +192,13 @@ class Basic(Modifier):
         self.frequency = d["frequency"]
         self.positive = d["positive"]
         self.offset = d["offset"]
+        self.lfo = pick_lfo_from_list_by_name(d["lfo"], self.lfos)
+
+    def switch_to_lfo(self, index):
+        try:
+            self.lfo = self.lfos[index]
+        except IndexError:
+            eprint("No LFO in slot", index)
 
     def calculate(self, t):
         # TODO: Sync to midi clock
@@ -119,75 +212,5 @@ class Basic(Modifier):
         # However, it would't allow full range modulation in centered
         # mode. It feels better, but makes the centered mode less useful.
         # * (1 + int(self.positive)) / 2
-        return self.wave(t)
+        return self.lfo.wave(t, self.positive)
 
-    def wave(self, t):
-        """
-        Implement in such a way that:
-        self.positive == True ---> [ 0, 1], wave(0) = 0
-        self.positive == False --> [-1, 1], wave(0) = 0
-        """
-        raise NotImplementedError
-
-class Sine(Basic):
-    
-    def wave(self, t):
-        if self.positive:
-            return (sin(self.period(t)) + 1) / 2
-        else:
-            return -cos(self.period(t))
-
-    @staticmethod
-    def period(t):
-        return t * 2 * pi
-
-
-class Saw(Basic):
-    
-    def wave(self, t):
-        if self.positive:
-            return t
-        else:
-            return t * 2 - 1
-
-
-class Triangle(Basic):
-    
-    def wave(self, t):
-        if self.positive:
-            if t < 0.5:
-                return 2 * t
-            else:
-                return 2 - 2 * t
-        else:
-            if t < 0.25:
-                return t * 4
-            elif t < 0.75:
-                return 1 - 4 * (t - 0.25)
-            else:
-                return 4 * (t - 0.75) - 1
-
-
-class Square(Basic):
-    
-    def wave(self, t):
-        if self.positive:
-            return int(t < 0.25 or t > 0.75)
-        else:
-            return int(t < 0.5) * 2 - 1
-
-
-class SampledRandom(Basic):
-
-    last_t = 0
-    current_value = 0
-    
-    def wave(self, t):
-        if t <= self.last_t:
-            if self.positive:
-                self.current_value = random()
-            else:
-                self.current_value = random() * 2 - 1
-
-        self.last_t = t
-        return self.current_value

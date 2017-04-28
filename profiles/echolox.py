@@ -2,7 +2,8 @@ import util
 
 from smci import View
 from targets import Parameter, SwitchView, PageFlip, FlexSetter, FlexParameter, ModView, SnapshotButton, SnapshotSelector
-from modifiers import *
+from modifiers.modifier import AttributeType
+from modifiers.basic import Basic, Sine, Square, Saw, SampledRandom
 
 comment = {
     "author": "Matt 'Echolox' Duncan",
@@ -122,13 +123,13 @@ def create(interface):
     Make sure to pick unique names!
     """
     # TODO: Make this helper function available elsewhere
-    def create_lfo(interface, Type, name, button):
+    def create_lfo(interface, name, button, Init_Type):
         """
         Creates a LFO and maps it to a button on the active view of the Interface. Returns the LFO and the ModView
         :param interface: Interface to map on
         :return: (LFO, ModView)
         """
-        lfo = Type(name)
+        lfo = Basic(name, init_lfo=Init_Type)
         view = ModView("%s_ModView" % name, interface, lfo)
         interface.add_modifier(lfo)
         interface.view.map_this(button.ID, view)
@@ -138,10 +139,10 @@ def create(interface):
     lfos, lfo_views = [], []
     sa = util.split_append(lfos, lfo_views)
 
-    sa(create_lfo(i, Sine, "LFOSine", bcr.command_buttons[0]))
-    sa(create_lfo(i, Saw, "LFOSaw", bcr.command_buttons[1]))
-    sa(create_lfo(i, Square, "LFOSquare", bcr.command_buttons[2]))
-    sa(create_lfo(i, SampledRandom, "LFORandom", bcr.command_buttons[3]))
+    sa(create_lfo(i, "LFOSine", bcr.command_buttons[0], Sine))
+    sa(create_lfo(i, "LFOSaw", bcr.command_buttons[1], Saw))
+    sa(create_lfo(i, "LFOSquare", bcr.command_buttons[2], Square))
+    sa(create_lfo(i, "LFORandom", bcr.command_buttons[3], SampledRandom))
 
     """ GLOBAL PAGEFLIP
     Our simulated BCR2k provides us three more rows of dials than the real unit has.

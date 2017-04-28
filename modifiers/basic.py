@@ -115,8 +115,6 @@ class SampledRandom(LFO):
         return self.current_value
 
 
-
-
 #### Define all LFOs above this line!! ####
 
 # We list them explicitly instead of gathering them from locals() to define an order
@@ -139,8 +137,9 @@ class Basic(Modifier):
     """
 
     attribute_configs = (
-        AttributeDescriptor("amplitude",    0, 127, int,   AttributeType.span, False, None),
+        AttributeDescriptor("lfo",          0, 127, int,   AttributeType.span, False, None),
         AttributeDescriptor("frequency", 0.01,  10, float, AttributeType.span, False, 100),
+        AttributeDescriptor("amplitude",    0, 127, int,   AttributeType.span, False, None),
         AttributeDescriptor("offset",    -0.5, 0.5, float, AttributeType.span, False, None),
 
         AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False, None),
@@ -152,7 +151,15 @@ class Basic(Modifier):
         self.positive = positive
         self.offset = offset
         self.lfos = [L() for L in LFOs]
-        self.lfo = pick_lfo_from_list(init_lfo, self.lfos)
+        self._lfo = pick_lfo_from_list(init_lfo, self.lfos)
+
+    @property
+    def lfo(self):
+        return self.lfos.index(self._lfo)
+
+    @lfo.setter
+    def lfo(self, value):
+        self.switch_to_lfo(value)
 
     def serialize(self):
         """
@@ -177,14 +184,14 @@ class Basic(Modifier):
         self.frequency = m["frequency"]
         self.positive = m["positive"]
         self.offset = m["offset"]
-        self.lfo = pick_lfo_from_list_by_name(m["lfo"], self.lfos)
+        self.lfo = self.lfos.index(pick_lfo_from_list_by_name(m["lfo"], self.lfos))
 
     def save(self):
         d = super().save()
         d["frequency"] = self.frequency
         d["positive"] = self.positive
         d["offset"] = self.offset
-        d["lfo"] = self.lfo.__class__.__name__
+        d["lfo"] = self._lfo.__class__.__name__
         return d
 
     def load(self, d, i):
@@ -192,11 +199,11 @@ class Basic(Modifier):
         self.frequency = d["frequency"]
         self.positive = d["positive"]
         self.offset = d["offset"]
-        self.lfo = pick_lfo_from_list_by_name(d["lfo"], self.lfos)
+        self.lfo = self.lfos.index(pick_lfo_from_list_by_name(d["lfo"], self.lfos))
 
     def switch_to_lfo(self, index):
         try:
-            self.lfo = self.lfos[index]
+            self._lfo = self.lfos[index]
         except IndexError:
             eprint("No LFO in slot", index)
 
@@ -212,5 +219,5 @@ class Basic(Modifier):
         # However, it would't allow full range modulation in centered
         # mode. It feels better, but makes the centered mode less useful.
         # * (1 + int(self.positive)) / 2
-        return self.lfo.wave(t, self.positive)
+        return self._lfo.wave(t, self.positive)
 

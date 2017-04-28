@@ -6,7 +6,7 @@ per Target.
 """
 from time import time
 
-from util import eprint
+from util import eprint, iprint
 from .target import Target, ValueTarget
 from smci.view import View
 from devices.controls import Button

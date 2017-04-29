@@ -35,8 +35,7 @@ from random import random
 
 from util import eprint
 from .modifier import Modifier
-from util.attribute_mapping import AttributeType, AttributeDescriptor
-
+from util.attribute_mapping import AttributeType, AttributeDescriptor, AttributeGapSpan
 
 
 # @TODO Move to util?
@@ -126,7 +125,10 @@ def pick_lfo_from_list_by_name(name, lfos):
     return next(filter(lambda l: type(l).__name__ == name, lfos))
 
 
-SYNC_STEPS = {x: Fraction(x) for x in ("1/32", "1/16", "1/8", "1/4", "1/2", "1", "2", "4", "8")}
+SYNC_STEPS = [Fraction(x) for x in ("1/32", "1/16", "1/8", "1/4", "1/2", "1", "2", "4", "8")]
+SYNC_MAX_CONFIG = len(SYNC_STEPS) - 1
+def index_of_sync_freq(freq):
+    return SYNC_STEPS.index(freq)
 
 class Basic(Modifier):
     """
@@ -139,10 +141,19 @@ class Basic(Modifier):
     """
 
     attribute_configs = (
-        AttributeDescriptor("lfo",          0, 127, int,   AttributeType.span, False, None),
-        AttributeDescriptor("frequency", 0.01,  10, float, AttributeType.span, False, 100),
-        AttributeDescriptor("amplitude",    0, 127, int,   AttributeType.span, False, None),
-        AttributeDescriptor("offset",    -0.5, 0.5, float, AttributeType.span, False, None),
+        ## TOP ROW
+        # First Dial displays the LFO value
+        AttributeDescriptor("freq_sync",    0, SYNC_MAX_CONFIG,   int, AttributeType.span, False, None),
+        AttributeDescriptor("amplitude",    0,             127,   int, AttributeType.span, False, None),
+        AttributeDescriptor("offset",    -0.5,             0.5, float, AttributeType.span, False, None),
+        AttributeGapSpan,
+        AttributeGapSpan,
+        AttributeGapSpan,
+        AttributeGapSpan,
+
+        ## MIDDLE ROW
+        AttributeDescriptor("lfo",          0, 127,  int, AttributeType.span, False, None),
+        AttributeDescriptor("frequency", 0.01, 10, float, AttributeType.span, False,  100),
 
         AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False, None),
         AttributeDescriptor("synced",   0, 1, bool, AttributeType.boolean, False, None),
@@ -153,7 +164,7 @@ class Basic(Modifier):
         self.frequency = frequency
 
         # TODO: Set up as property to select new frequency from list
-        self.frequency_synced = SYNC_STEPS["1/2"]
+        self.frequency_synced = Fraction("1")
 
         self.positive = positive
         self.offset = offset
@@ -196,6 +207,17 @@ class Basic(Modifier):
         # mode. It feels better, but makes the centered mode less useful.
         # * (1 + int(self.positive)) / 2
         return self._lfo.wave(t, self.positive)
+
+    @property
+    def freq_sync(self):
+        return index_of_sync_freq(self.frequency_synced)
+
+    @freq_sync.setter
+    def freq_sync(self, index):
+        try:
+            self.frequency_synced = SYNC_STEPS[index]
+        except IndexError:
+            eprint(self, "Sync Step Index out of range")
 
     @property
     def lfo(self):

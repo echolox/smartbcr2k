@@ -521,6 +521,7 @@ class Interface(object):
         except Empty:
             pass
 
+        time_report = self.clock.get_report()
 
         for m in self.modifiers:
             m.tick(time_now)

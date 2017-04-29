@@ -125,7 +125,7 @@ def pick_lfo_from_list_by_name(name, lfos):
     return next(filter(lambda l: type(l).__name__ == name, lfos))
 
 
-SYNC_STEPS = [Fraction(x) for x in ("1/32", "1/16", "1/8", "1/4", "1/2", "1", "2", "4", "8")]
+SYNC_STEPS = [Fraction(x) for x in ('8', '4', '2', '1', '1/2', '1/4', '1/8', '1/16', '1/32')]
 SYNC_MAX_CONFIG = len(SYNC_STEPS) - 1
 def index_of_sync_freq(freq):
     return SYNC_STEPS.index(freq)
@@ -152,8 +152,8 @@ class Basic(Modifier):
         AttributeGapSpan,
 
         ## MIDDLE ROW
-        AttributeDescriptor("lfo",          0, 127,  int, AttributeType.span, False, None),
-        AttributeDescriptor("frequency", 0.01, 10, float, AttributeType.span, False,  100),
+        AttributeDescriptor("lfo",          0, 127,   int, AttributeType.span, False, None),
+        AttributeDescriptor("frequency", 0.01,  10, float, AttributeType.span, False,  100),
 
         AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False, None),
         AttributeDescriptor("synced",   0, 1, bool, AttributeType.boolean, False, None),

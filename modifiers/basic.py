@@ -145,21 +145,29 @@ class Basic(Modifier):
         AttributeDescriptor("offset",    -0.5, 0.5, float, AttributeType.span, False, None),
 
         AttributeDescriptor("positive", 0, 1, bool, AttributeType.boolean, False, None),
+        AttributeDescriptor("synced",   0, 1, bool, AttributeType.boolean, False, None),
     )
 
-    def __init__(self, name, frequency=0.25, positive=False, offset=0, init_lfo=Sine, **kwargs):
+    def __init__(self, name, frequency=0.25, positive=False, offset=0, init_lfo=Sine, synced=True, **kwargs):
         super().__init__(name, **kwargs)
         self.frequency = frequency
+
+        # TODO: Set up as property to select new frquency from list
         self.frequency_synced = SYNC_STEPS["1/2"]
+
         self.positive = positive
         self.offset = offset
         self.lfos = [L() for L in LFOs]
         self._lfo = pick_lfo_from_list(init_lfo, self.lfos)
 
-        self.synced = True
+        # Variables for keeping in sync with the clock
+        # TODO: When changing synced value, calculate frequency from frequency_synced and vice versa
+        self.synced = synced
         self.last_prog = 0.0
-
         self.sync_segment = 0
+
+        # Variables for keeping track of free running oscillation
+        self.free_t = 0.0
 
     def calculate(self, time_report):
         """
@@ -176,9 +184,10 @@ class Basic(Modifier):
             t = (self.sync_segment + wrapped_prog) / self.frequency_synced
             self.last_prog = wrapped_prog
         else:
-            t = 0.5  # TODO: Implement free running LFO
+            self.free_t += self.frequency * time_report.delta
+            t = self.free_t
 
-        t %= 1
+        t = (t + self.offset) % 1
 
         # Dampen the amplitude of "centered" waves by 0.5
         # That way, setting the power of modulation in ModView

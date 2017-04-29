@@ -5,6 +5,7 @@ from enum import Enum
 class AttributeType(Enum):
     boolean = 0
     span = 1
+    list = 2
 
 
 AttributeDescriptor = namedtuple("AttributeDescriptor", ["name", "min", "max", "cast", "type", "readonly", "scale"])

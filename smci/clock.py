@@ -66,9 +66,9 @@ class Clock(object):
                 self.prog = 0.0
         else:
             free_prog = delta / seconds_per_tick(self.bpm) / ticks_per_measure(self.signature)
-            self.prog = (self.prog + free_prog) % 1
+            self.prog = self.prog + free_prog
+        self.prog %= 1
 
-        assert(0.0 <= self.prog < 1)
         return TimeReport(delta, self.measure_count, self.signature, self.tick_count, self._bpm, self.prog, self.running)
 
     @property

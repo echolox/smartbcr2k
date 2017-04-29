@@ -29,14 +29,14 @@ for one cycle of the waveform.
 For musically synced frequencies, calculate the frequency to set using the bpm_syn
 function which receives the bpm and the number of quarter notes per cycle.
 """
-from collections import namedtuple
-from inspect import isclass
+from fractions import Fraction
 from math import sin, cos, pi
 from random import random
 
 from util import eprint
 from .modifier import Modifier
 from util.attribute_mapping import AttributeType, AttributeDescriptor
+
 
 
 # @TODO Move to util?
@@ -126,6 +126,8 @@ def pick_lfo_from_list_by_name(name, lfos):
     return next(filter(lambda l: type(l).__name__ == name, lfos))
 
 
+SYNC_STEPS = {x: Fraction(x) for x in ("1/32", "1/16", "1/8", "1/4", "1/2", "1", "2", "4", "8")}
+
 class Basic(Modifier):
     """
     A basic modulator that just needs a frequency to operate. It can choose from a list
@@ -148,13 +150,43 @@ class Basic(Modifier):
     def __init__(self, name, frequency=0.25, positive=False, offset=0, init_lfo=Sine, **kwargs):
         super().__init__(name, **kwargs)
         self.frequency = frequency
+        self.frequency_synced = SYNC_STEPS["1/2"]
         self.positive = positive
         self.offset = offset
         self.lfos = [L() for L in LFOs]
         self._lfo = pick_lfo_from_list(init_lfo, self.lfos)
 
         self.synced = True
-        self.last_t = 0.0
+        self.last_prog = 0.0
+
+        self.sync_segment = 0
+
+    def calculate(self, time_report):
+        """
+        Returns the LFO's value based on the time report.
+        :param time_report: injected from the clock object
+        :return: LFO value in [-1, 1] c R
+        """
+
+        if self.synced:
+            wrapped_prog= time_report.prog % self.frequency_synced
+            if wrapped_prog <= self.last_prog:
+                self.sync_segment = (self.sync_segment + 1) % self.frequency_synced
+
+            t = (self.sync_segment + wrapped_prog) / self.frequency_synced
+            self.last_prog = wrapped_prog
+        else:
+            t = 0.5  # TODO: Implement free running LFO
+
+        t %= 1
+
+        # Dampen the amplitude of "centered" waves by 0.5
+        # That way, setting the power of modulation in ModView
+        # the set range equates directly to the range of oscillation
+        # However, it wouldn't allow full range modulation in centered
+        # mode. It feels better, but makes the centered mode less useful.
+        # * (1 + int(self.positive)) / 2
+        return self._lfo.wave(t, self.positive)
 
     @property
     def lfo(self):
@@ -215,22 +247,4 @@ class Basic(Modifier):
         except IndexError:
             eprint("No LFO in slot", index)
 
-    def calculate(self, time_report):
-        """
-        Returns the LFO's value based on the time report.
-        :param time_report: injected from the clock object
-        :return: LFO value in [-1, 1] c R
-        """
-        if self.synced:
-            t = (time_report.prog + self.offset) % 1
-        else:
-            t = 0.5  # TODO: Implement free running LFO
-
-        # Dampen the amplitude of "centered" waves by 0.5
-        # That way, setting the power of modulation in ModView
-        # the set range equates directly to the range of oscillation
-        # However, it wouldn't allow full range modulation in centered
-        # mode. It feels better, but makes the centered mode less useful.
-        # * (1 + int(self.positive)) / 2
-        return self._lfo.wave(t, self.positive)
 

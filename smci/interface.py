@@ -503,8 +503,6 @@ class Interface(object):
             yield_thread()
 
     def update(self):
-        time_now = time.time()
-
         # Handle DeviceEvent queue
         max_messages = 50
         try:
@@ -524,7 +522,7 @@ class Interface(object):
         time_report = self.clock.get_report()
 
         for m in self.modifiers:
-            m.tick(time_now)
+            m.tick(time_report)
 
 
     def __repr__(self):

@@ -153,6 +153,9 @@ class Basic(Modifier):
         self.lfos = [L() for L in LFOs]
         self._lfo = pick_lfo_from_list(init_lfo, self.lfos)
 
+        self.synced = True
+        self.last_t = 0.0
+
     @property
     def lfo(self):
         return self.lfos.index(self._lfo)
@@ -202,21 +205,31 @@ class Basic(Modifier):
         self.lfo = self.lfos.index(pick_lfo_from_list_by_name(d["lfo"], self.lfos))
 
     def switch_to_lfo(self, index):
+        """
+        Switch the the LFO at the provided index in the Modifiers self.lfos list.
+        Doesn't complain if the index is out of range.
+        :param index: Index of the LFO to switch to
+        """
         try:
             self._lfo = self.lfos[index]
         except IndexError:
             eprint("No LFO in slot", index)
 
-    def calculate(self, t):
-        # TODO: Sync to midi clock
-        t *= self.frequency
-
-        t = (t + self.offset) % 1
+    def calculate(self, time_report):
+        """
+        Returns the LFO's value based on the time report.
+        :param time_report: injected from the clock object
+        :return: LFO value in [-1, 1] c R
+        """
+        if self.synced:
+            t = (time_report.prog + self.offset) % 1
+        else:
+            t = 0.5  # TODO: Implement free running LFO
 
         # Dampen the amplitude of "centered" waves by 0.5
         # That way, setting the power of modulation in ModView
         # the set range equates directly to the range of oscillation
-        # However, it would't allow full range modulation in centered
+        # However, it wouldn't allow full range modulation in centered
         # mode. It feels better, but makes the centered mode less useful.
         # * (1 + int(self.positive)) / 2
         return self._lfo.wave(t, self.positive)

@@ -82,9 +82,10 @@ class StepSequencer(Modifier):
         self.length = d["length"]
         self.offset = d["offset"]
 
-    def calculate(self, t):
+    def calculate(self, time_report):
         # TODO: Sync to midi clock
-        t *= self.frequency
+#        t *= self.frequency
+        t = time_report.prog
 
         if self.last_t is None:
             self.cursor = t

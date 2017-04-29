@@ -1,15 +1,26 @@
+from functools import lru_cache
 from wrapt import synchronized
 from time import time
 from collections import namedtuple
 
 TimeSignature = namedtuple("TimeSignature", ["top", "bottom"])
 
-TimeReport = namedtuple("TimeReport", ["delta", "measure", "signature", "tick", "bpm", "prog"])
+TimeReport = namedtuple("TimeReport", ["delta", "measure", "signature", "tick", "bpm", "prog", "playing"])
+"""
+- delta:     Time passed since last report, in seconds
+- measure:   Current measure of the song, starting with 0
+- signature: TimeSignature namedtuple
+- tick:      Tick within the current measure
+- bpm:       Currently set BPM
+- prog:      Moves within [0.0, 1.0) c R over the span of one measure
+- playing:   Whether the song is playing or not
+"""
 
-# TODO: CACHE
+@lru_cache(8)
 def ticks_per_measure(signature):
     return signature.top * 24 / (signature.bottom / 4)
 
+@lru_cache()
 def seconds_per_tick(bpm):
     return 60.0 / bpm / 24
 
@@ -28,34 +39,37 @@ class Clock(object):
 
         self.last_report_time = None
         self.last_tick_time = None
+        self.prog = 0.0
 
-        self.last_report = TimeReport(0.0, 0, self.signature, 0, self._bpm, 0.0)
         self.running = False
+
+        self.absolute_time = 0.0
 
     @synchronized
     def get_report(self):
+        # DELTA
+        now = time()
+        try:
+            delta = now - self.last_report_time
+        except TypeError:  # self.last_report_time not set yet
+            delta = 0.0
+        self.absolute_time += delta
+        self.last_report_time = now
+
+        # PROG
         if self.running:
-            # DELTA
-            now = time()
             try:
-                delta = now - self.last_report_time
-            except TypeError:  # self.last_report_time not set yet
-                delta = 0
-            self.last_report_time = now
-
-            # PROG
-            try:
-                prog = self.tick_count / ticks_per_measure(self.signature)
-                # Let n be self.tick_count. How far are we, on the scale [0, 1), between the nth and n+1th tick?
+                self.prog = self.tick_count / ticks_per_measure(self.signature)
                 delta_tick = now - self.last_tick_time
-                prog += delta_tick / seconds_per_tick(self.bpm) / ticks_per_measure(self.signature)
+                self.prog += delta_tick / seconds_per_tick(self.bpm) / ticks_per_measure(self.signature)
             except TypeError:  # self.last_report_time not set yet
-                prog = 0
+                self.prog = 0.0
+        else:
+            free_prog = delta / seconds_per_tick(self.bpm) / ticks_per_measure(self.signature)
+            self.prog = (self.prog + free_prog) % 1
 
-            assert(0 <= prog < 1)
-            self.last_report = TimeReport(delta, self.measure_count, self.signature, self.tick_count, self._bpm, prog)
-
-        return self.last_report
+        assert(0.0 <= self.prog < 1)
+        return TimeReport(delta, self.measure_count, self.signature, self.tick_count, self._bpm, self.prog, self.running)
 
     @property
     def bpm(self):

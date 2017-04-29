@@ -104,11 +104,11 @@ class Modifier(Configurable):
         """
         return self.value * self.amplitude
 
-    def tick(self, t):
+    def tick(self, time_report):
         """
         Calculates a new modifier value and applies it to all its targets
         """
-        self._value = self.calculate(t)
+        self._value = self.calculate(time_report)
         modvalue = self.modvalue()
         for target, power in self.targets.items():
             try:

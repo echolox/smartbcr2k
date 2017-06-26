@@ -549,17 +549,20 @@ def resolve_profile(name):
     return profile_file
 
 
+def make_snapshots_file_name(name):
+    return os.path.join(PROFILES_DIR, "%s.%s" % (name, SNAPSHOTS_EXT))
+
 def resolve_snapshots(name):
     """
-    Find a script in the profiles dir/package by name.
+    Find a snapshot file in the profiles dir/package by name.
     """
-    snapshots_file = os.path.join(PROFILES_DIR, "%s.%s" % (name, SNAPSHOTS_EXT))
+    snapshots_file = make_snapshots_file_name(name)
     if not os.path.isfile(snapshots_file):
         raise FileNotFoundError
     return snapshots_file
 
-
-def load_snapshots(interface, filename):
+def load_snapshots(interface, profile):
+    filename = make_snapshots_file_name(profile)
     with open(filename, "r") as infile:
         print("Loading", filename)
         interface.snapshots = json.load(infile)

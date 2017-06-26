@@ -29,8 +29,7 @@ profile_file = resolve_profile(args.profile)
 load_profile(interface, profile_file)
 
 try:
-    snapshot_file = resolve_snapshots(args.profile)
-    load_snapshots(interface, snapshot_file)
+    load_snapshots(interface, args.profile)
 except FileNotFoundError:
     print("No snapshots available")
 
@@ -59,6 +58,6 @@ Exit by hitting Ctrl+Z and then Enter.
 except KeyboardInterrupt:
     pass
 
-save_snapshots(interface, snapshot_file)
+save_snapshots(interface, make_snapshots_file_name(args.profile))
 
 exit()

@@ -3,6 +3,8 @@ from wrapt import synchronized
 from time import time
 from collections import namedtuple
 
+from util import iprint
+
 TimeSignature = namedtuple("TimeSignature", ["top", "bottom"])
 
 TimeReport = namedtuple("TimeReport", ["delta", "measure", "signature", "tick", "bpm", "prog", "playing"])
@@ -45,6 +47,9 @@ class Clock(object):
 
         self.absolute_time = 0.0
 
+
+        self.last_prog = 0.0
+
     @synchronized
     def get_report(self):
         # DELTA
@@ -61,13 +66,20 @@ class Clock(object):
             try:
                 self.prog = self.tick_count / ticks_per_measure(self.signature)
                 delta_tick = now - self.last_tick_time
+                iprint(delta_tick < 0, "OOPS")
                 self.prog += delta_tick / seconds_per_tick(self.bpm) / ticks_per_measure(self.signature)
             except TypeError:  # self.last_report_time not set yet
                 self.prog = 0.0
         else:
+
             free_prog = delta / seconds_per_tick(self.bpm) / ticks_per_measure(self.signature)
             self.prog = self.prog + free_prog
         self.prog %= 1
+        # @BUG: prog not monotone. Happens when the clock stops and then resumes running (sometimes)
+
+        if (self.prog <= self.last_prog):
+            print(self.prog, self.last_prog, now, self.last_tick_time)
+        self.last_prog = self.prog
 
         return TimeReport(delta, self.measure_count, self.signature, self.tick_count, self._bpm, self.prog, self.running)
 

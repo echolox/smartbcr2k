@@ -33,7 +33,7 @@ from fractions import Fraction
 from math import sin, cos, pi
 from random import random
 
-from util import eprint
+from util import eprint, iprint
 from .modifier import Modifier
 from util.attribute_mapping import AttributeType, AttributeDescriptor, AttributeGapSpan
 
@@ -163,7 +163,6 @@ class Basic(Modifier):
         super().__init__(name, **kwargs)
         self.frequency = frequency
 
-        # TODO: Set up as property to select new frequency from list
         self.frequency_synced = Fraction("1")
 
         self.positive = positive
@@ -188,7 +187,8 @@ class Basic(Modifier):
         """
 
         if self.synced:
-            wrapped_prog= time_report.prog % self.frequency_synced
+            wrapped_prog = time_report.prog % self.frequency_synced
+            #iprint(self.name == "LFOSine", self.frequency_synced, self.sync_segment, time_report.prog, wrapped_prog, self.last_prog)
             if wrapped_prog <= self.last_prog:
                 self.sync_segment = (self.sync_segment + 1) % self.frequency_synced
 

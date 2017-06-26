@@ -87,6 +87,8 @@ def create(interface):
     """
     # It's just so much to type every time
     i = interface
+    # Start CC Parameters on Channel 7, because I've got other devices taking up the first 6
+    i.parameter_maker.channel = 7
 
     # The BCR2k is in a Shell within the Interface. Don't know what that means? Have a look in
     # util.threadshell. Anyway, for the purposes of setting up a profile we'd like to have direct
@@ -190,9 +192,6 @@ def create(interface):
     map_controls_to_targets(view_init, bcr.macro_bank_buttons(0), [snpset] + flex_setters)
     configure_controls(view_init, bcr.macro_bank_buttons(0), "toggle", False)
 
-    # Skip 8 parameters (CC Values) to keep offset because I'm too lazy to remap in Ableton Live
-    i.parameter_maker.skip(8)
-
     # Collect all the Targets that the BCR2k's macros are mapped to, starting with the ones we already did
     macro_dial_targets = [snpsel] + flex_params
     macro_button_targets = [snpset] + flex_setters
@@ -292,7 +291,7 @@ def create(interface):
     ### our top row menu buttons to lead us to the other tracks or back to Init View
 
     # Create a generator that will yield the next combination of Channel and CC Value for us
-    gen = ccc(channel=1, cc=i.parameter_maker.next_cc, forbidden=i.parameter_maker.forbidden)
+    gen = ccc(channel=i.parameter_maker.channel, cc=i.parameter_maker.next_cc, forbidden=i.parameter_maker.forbidden)
     gen_n = lambda n: [next(gen) for _ in range(n)]
 
     # We want to move through the dials by column, but do so in one big list

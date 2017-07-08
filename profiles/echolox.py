@@ -43,9 +43,9 @@ comment = {
 
 
 def map_controls_to_targets(view, controls, targets):
-        """ Maps the list of controls to the list of targets. """
-        for control, target in zip(controls, targets):
-            view.map_this(control.ID, target)
+    """ Maps the list of controls to the list of targets. """
+    for control, target in zip(controls, targets):
+        view.map_this(control.ID, target)
 
 def configure_controls(view, controls, attribute, value):
     """ In the provided view, configures the list of controls by setting the attribute to the provided value. """
@@ -220,41 +220,6 @@ def create(interface):
     bpm = BPM("BPM", i)
     view_init.map_this(bcr.dialsc[0][2].ID, bpm)
 
-
-    """ MENU BUTTONS: Let's get complicated!
-    The top row of buttons let's us select a track. On each track, the buttons in the bottom row activate
-    and deactivate the 8 effects on that track. Each column of 6 dials (pageflip!) controls maps to the
-    parameters of that effect. 
-    
-    That means, for each track we need to have a View with unique Parameters per Dial. We also need to make
-    sure that in each view the top row still maps to the other Track Views. The button of the currently active
-    view should blink and lead us back to the Init View.
-    
-    Suppose you're back in the Init View. Instead of choosing a track on the top row, you can select an effect on
-    the bottom row. Now, the top row houses the activators for that effect for each track. These are the same
-    Targets (not duplicates, the exact same objects) we mapped per track before that. We do the same things with
-    the dials.
-    
-    Tapping another button in the bottom row chooses a different effect. Tapping the same button (that's again
-    blinking) takes us back to Init View.
-    """
-    # Construct the Views. We'll fill them later but need them now to construct SwitchTargets
-    views_tracks   = [View(bcr, "Track_%i" % (index + 1)) for index in range(8)]
-    views_fx       = [View(bcr, "FX_%i"    % (index + 1)) for index in range(8)]
-
-    # These SwitchTargets will bring us to the Views constructed above
-    switch_tracks  = [SwitchView("To_T%i"  % (index + 1), i, views_tracks[index]) for index in range(8)]
-    switch_fx      = [SwitchView("To_FX%i" % (index + 1), i, views_fx[index])     for index in range(8)]
-    switch_to_init =  SwitchView("To_INIT",               i, view_init)
-
-    # Distribute them on the Init View
-    map_controls_to_targets(view_init, bcr.menu_rows(0), switch_tracks)
-    configure_controls(view_init, bcr.menu_rows(0), "toggle", False)
-
-    map_controls_to_targets(view_init, bcr.menu_rows(1), switch_fx)
-    configure_controls(view_init, bcr.menu_rows(1), "toggle", False)
-
-
     ### FOR ALL OF THE FOLLOWING VIEWS
     ### We want to set up the follow controls, so lets define a helper function for that
     def controls_for_all(view):
@@ -285,6 +250,75 @@ def create(interface):
         view.map_this(bcr.command_buttons[3].ID, steps_view)
         view.configuration[bcr.command_buttons[3].ID]["toggle"] = False
     ### END GLOBAL STUFF
+
+    # Setup the second init_view for midi stuff
+    view_init_midi = View(bcr, "Init View Midi")
+    i.add_view(view_init_midi)
+
+    switch_to_init =  SwitchView("To_INIT", i, view_init)
+    switch_to_init_midi = SwitchView("To_INIT_MIDI", i, view_init_midi)
+
+    controls_for_all(view_init_midi)
+
+    mode_fx_button = bcr.function_buttons[0]
+    mode_midi_button = bcr.function_buttons[1]
+
+    view_init.configuration[mode_fx_button.ID]["toggle"] = False
+    view_init.configuration[mode_fx_button.ID]["blink"] = True
+    view_init.map_this(mode_midi_button.ID, switch_to_init_midi)
+
+    view_init_midi.configuration[mode_midi_button.ID]["toggle"] = False
+    view_init_midi.configuration[mode_midi_button.ID]["blink"] = True
+    view_init_midi.map_this(mode_fx_button.ID, switch_to_init)
+
+
+    def mode_switch_on_fx(on_view, switch_to_view):
+        view.configuration[mode_fx_button.ID]["toggle"] = False
+        view.configuration[mode_fx_button.ID]["blink"] = True
+        view.map_this(mode_midi_button.ID, switch_to_view)
+
+    def mode_switch_on_midi(on_view, switch_to_view):
+        view.configuration[mode_midi_button.ID]["toggle"] = False
+        view.configuration[mode_midi_button.ID]["blink"] = True
+        view.map_this(mode_fx_button.ID, switch_to_view)
+
+
+    """ MENU BUTTONS: Let's get complicated!
+    The top row of buttons let's us select a track. On each track, the buttons in the bottom row activate
+    and deactivate the 8 effects on that track. Each column of 6 dials (pageflip!) controls maps to the
+    parameters of that effect. 
+    
+    That means, for each track we need to have a View with unique Parameters per Dial. We also need to make
+    sure that in each view the top row still maps to the other Track Views. The button of the currently active
+    view should blink and lead us back to the Init View.
+    
+    Suppose you're back in the Init View. Instead of choosing a track on the top row, you can select an effect on
+    the bottom row. Now, the top row houses the activators for that effect for each track. These are the same
+    Targets (not duplicates, the exact same objects) we mapped per track before that. We do the same things with
+    the dials.
+    
+    Tapping another button in the bottom row chooses a different effect. Tapping the same button (that's again
+    blinking) takes us back to Init View.
+    """
+    # Construct the Views. We'll fill them later but need them now to construct SwitchTargets
+    views_tracks   = [View(bcr, "Track_%i" % (index + 1)) for index in range(8)]
+    views_fx       = [View(bcr, "FX_%i"    % (index + 1)) for index in range(8)]
+    views_midi     = [View(bcr, "Midi_%i"  % (index + 1)) for index in range(8)]
+
+    # These SwitchTargets will bring us to the Views constructed above
+    switch_tracks  = [SwitchView("To_T%i"    % (index + 1), i, views_tracks[index]) for index in range(8)]
+    switch_fx      = [SwitchView("To_FX%i"   % (index + 1), i, views_fx[index])     for index in range(8)]
+    switch_midi    = [SwitchView("To_MIDI%i" % (index + 1), i, views_midi[index])   for index in range(8)]
+
+    # Distribute them on the Init Views
+    map_controls_to_targets(view_init, bcr.menu_rows(0), switch_tracks)
+    configure_controls(view_init, bcr.menu_rows(0), "toggle", False)
+
+    map_controls_to_targets(view_init, bcr.menu_rows(1), switch_fx)
+    configure_controls(view_init, bcr.menu_rows(1), "toggle", False)
+
+    map_controls_to_targets(view_init_midi, bcr.menu_rows(0), switch_midi)
+    configure_controls(view_init_midi, bcr.menu_rows(0), "toggle", False)
 
 
     ### We start by going track by track and mapping the FX activators, FX parameters and of course
@@ -336,6 +370,8 @@ def create(interface):
             subparam_index = (subparam_index + 1) % 6
         map_controls_to_targets(view, dials, fx_params)
 
+        mode_switch_on_fx(view, switch_midi[track_index])
+
         i.views.append(view)
     # END PER TRACK VIEW
 
@@ -367,3 +403,48 @@ def create(interface):
 
         i.views.append(view)
     # END PER EFFECT VIEW
+
+
+    # MIDI VIEWS
+    # These pretty much work like the Track views above. Choose a track and get a page full of controls
+    # related to that track.
+
+    for track_index in range(8):
+        view = views_midi[track_index]
+
+        ## First, let's map things that we want to keep from init view, our global controls if you will
+        controls_for_all(view)
+
+        # First Row Buttons: Switch To View
+        index = 0
+        for button, target in zip(bcr.menu_rows(0), switch_midi):
+            view.configuration[button.ID]["toggle"] = False
+            if index != track_index:
+                view.map_this(button.ID, target)
+            else:
+                view.map_this(button.ID, switch_to_init_midi)
+                view.configuration[button.ID]["blink"] = True
+            index += 1
+
+        # Second Row Buttons: Effects activators
+        fx_onoff = []
+        for index, (channel, cc) in enumerate(gen_n(8), start=1):
+            p = Parameter("T%i_MIDI%i_OnOff" % (track_index + 1, index), i, channel, cc, is_button=True)
+            fx_onoff.append(p)
+        map_controls_to_targets(view, bcr.menu_rows(1), fx_onoff)
+
+        # Effects parameters
+        fx_params = []
+        subparam_index = 0
+        for index, (channel, cc) in enumerate(gen_n(48), start=1):
+            p = Parameter("T%i_MIDI%i_%i" % (track_index + 1, (index - 1) / 6 + 1, subparam_index + 1), i, channel, cc)
+            fx_params.append(p)
+
+            subparam_index = (subparam_index + 1) % 6
+        map_controls_to_targets(view, dials, fx_params)
+
+        mode_switch_on_midi(view, switch_tracks[track_index])
+
+        i.views.append(view)
+    # END PER TRACK VIEW
+

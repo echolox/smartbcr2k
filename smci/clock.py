@@ -77,8 +77,8 @@ class Clock(object):
         self.prog %= 1
         # @BUG: prog not monotone. Happens when the clock stops and then resumes running (sometimes)
 
-        if (self.prog <= self.last_prog):
-            print(self.prog, self.last_prog, now, self.last_tick_time)
+#        if (self.prog <= self.last_prog):
+#            print("Beat", self.prog, self.last_prog, now, self.last_tick_time)
         self.last_prog = self.prog
 
         return TimeReport(delta, self.measure_count, self.signature, self.tick_count, self._bpm, self.prog, self.running)

@@ -133,3 +133,4 @@ class ValueTarget(Target):
         super().load(d)
         self._value = d["_value"]
         self.modifiers = ddict(lambda: 0.0, d["modifiers"])
+        self.trigger(self)

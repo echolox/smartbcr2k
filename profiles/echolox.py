@@ -251,37 +251,51 @@ def create(interface):
         view.configuration[bcr.command_buttons[3].ID]["toggle"] = False
     ### END GLOBAL STUFF
 
-    # Setup the second init_view for midi stuff
+    # Setup the second init_view for midi stuff and synth view
     view_init_midi = View(bcr, "Init View Midi")
     i.add_view(view_init_midi)
 
+    view_init_synth = View(bcr, "Init View Synth")
+    i.add_view(view_init_synth)
+
     switch_to_init =  SwitchView("To_INIT", i, view_init)
     switch_to_init_midi = SwitchView("To_INIT_MIDI", i, view_init_midi)
+    switch_to_init_synth = SwitchView("To_INIT_SYNTH", i, view_init_synth)
 
     controls_for_all(view_init_midi)
+    controls_for_all(view_init_synth)
 
     mode_fx_button = bcr.function_buttons[0]
     mode_midi_button = bcr.function_buttons[1]
+    mode_synth_button = bcr.function_buttons[3]
 
     view_init.configuration[mode_fx_button.ID]["toggle"] = False
     view_init.configuration[mode_fx_button.ID]["blink"] = True
     view_init.map_this(mode_midi_button.ID, switch_to_init_midi)
+    view_init.map_this(mode_synth_button.ID, switch_to_init_synth)
 
     view_init_midi.configuration[mode_midi_button.ID]["toggle"] = False
     view_init_midi.configuration[mode_midi_button.ID]["blink"] = True
     view_init_midi.map_this(mode_fx_button.ID, switch_to_init)
+    view_init_midi.map_this(mode_synth_button.ID, switch_to_init_synth)
+
+    view_init_synth.configuration[mode_synth_button.ID]["toggle"] = False
+    view_init_synth.configuration[mode_synth_button.ID]["blink"] = True
+    view_init_synth.map_this(mode_midi_button.ID, switch_to_init_midi)
+    view_init_synth.map_this(mode_fx_button.ID, switch_to_init)
 
 
     def mode_switch_on_fx(on_view, switch_to_view):
         view.configuration[mode_fx_button.ID]["toggle"] = False
         view.configuration[mode_fx_button.ID]["blink"] = True
         view.map_this(mode_midi_button.ID, switch_to_view)
+        view.map_this(mode_synth_button.ID, switch_to_init_synth)
 
     def mode_switch_on_midi(on_view, switch_to_view):
         view.configuration[mode_midi_button.ID]["toggle"] = False
         view.configuration[mode_midi_button.ID]["blink"] = True
         view.map_this(mode_fx_button.ID, switch_to_view)
-
+        view.map_this(mode_synth_button.ID, switch_to_init_synth)
 
     """ MENU BUTTONS: Let's get complicated!
     The top row of buttons let's us select a track. On each track, the buttons in the bottom row activate
@@ -409,6 +423,8 @@ def create(interface):
     # These pretty much work like the Track views above. Choose a track and get a page full of controls
     # related to that track.
 
+    harmony_targets = []
+
     for track_index in range(8):
         view = views_midi[track_index]
 
@@ -431,6 +447,8 @@ def create(interface):
         for index, (channel, cc) in enumerate(gen_n(8), start=1):
             p = Parameter("T%i_MIDI%i_OnOff" % (track_index + 1, index), i, channel, cc, is_button=True)
             fx_onoff.append(p)
+            if index == 1:
+                harmony_targets.append(p)
         map_controls_to_targets(view, bcr.menu_rows(1), fx_onoff)
 
         # Effects parameters
@@ -447,4 +465,46 @@ def create(interface):
 
         i.views.append(view)
     # END PER TRACK VIEW
+
+
+    # More stuff on the midi init view
+    for index in range(8):
+        button = bcr.menu_rows(1)[index]
+        target = harmony_targets[index]
+        view_init_midi.map_this(button.ID, target)
+
+    # More stuff on the synth init view
+    # Setup macro dials for Massive (1-6)
+    for column in range(8):
+        for d in range(3):
+            channel, cc = next(gen)
+            dial = bcr.dialsc[column][d]
+            target = Parameter("%i_%i" % (column, d), i, channel, cc)
+            view_init_synth.map_this(dial.ID, target)
+
+    # Setup macro on/off buttons for Massive (7, 8)
+    for column in range(8):
+        channel, cc = next(gen)
+        button = bcr.menu_rows(1)[column]
+        target = Parameter("Synthmacro_%i" % column, i, channel, cc)
+        view_init_synth.map_this(button.ID, target)
+
+    # Upper row goes to fx or midi view of that Synth track
+    for column in range(4):
+        button_to_fx = bcr.menu_rows(0)[2*column]
+        button_to_midi = bcr.menu_rows(0)[2*column + 1]
+        view_init_synth.map_this(button_to_fx.ID, switch_tracks[column])
+        view_init_synth.map_this(button_to_midi.ID, switch_midi[column])
+
+    # Second page of synth init view mirrors Filter section (left column) and midi basics (right column)
+    for column in range(4):
+        for d in range(3, 6):
+            dial_fx = bcr.dialsc[2*column][d]
+            dial_midi = bcr.dialsc[2*column+1][d]
+
+            target_fx = views_tracks[column].map[bcr.dialsc[0][d-3].ID][0]
+            target_midi = views_midi[column].map[bcr.dialsc[0][d-3].ID][0]
+
+            view_init_synth.map_this(dial_fx.ID, target_fx)
+            view_init_synth.map_this(dial_midi.ID, target_midi)
 

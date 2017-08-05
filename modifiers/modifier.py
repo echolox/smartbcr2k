@@ -141,8 +141,11 @@ class Modifier(Configurable):
         self._amplitude = d["_amplitude"]
         self.targets = ddict(lambda: 0.0)
         for t_name, value in d["targets"].items():
-            target = i.targets[t_name]
-            self.targets[target] = value
+            try:
+                target = i.targets[t_name]
+                self.targets[target] = value
+            except KeyError:
+                eprint("No Target named %s found in interface" % t_name)
 
     @classmethod
     def blank(cls):

@@ -14,7 +14,7 @@ from util.threadshell import Shell, yield_thread
 from util.attribute_mapping import AttributeType
 
 from targets import get_target, ValueTarget
-from devices import DeviceEvent, OutputEvent
+from devices import DeviceEvent, OutputEvent, ID2ccc
 from modifiers import get_modifier
 
 from .view import View
@@ -364,7 +364,7 @@ class Interface(object):
 
 
 
-    def from_output(self, sender, channel, cc, value):
+    def from_output(self, sender, ID, value):
         """
         Callback method whenever the ouput produces a control change.
         Inform the target and reflect the value on the input device always.
@@ -372,10 +372,11 @@ class Interface(object):
         assert(sender == self.output)
         # Look for targets connected to the Control ID of the output
 
+        channel, cc = ID2ccc(ID)
         targets = []
         for target_list in self.view.map.values():
             for target in target_list:
-                if target.is_connected_to_output(channel, cc):
+                if target.is_connected_to_output(ID):
                     targets.append(target)
 
         for target in targets:

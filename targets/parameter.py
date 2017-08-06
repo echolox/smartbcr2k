@@ -1,3 +1,4 @@
+from devices import ID2ccc
 from .target import ValueTarget, Target
 
 class Parameter(ValueTarget):
@@ -61,7 +62,8 @@ class Parameter(ValueTarget):
     def blank(cls, parent):
         return cls("unnamed", parent, 1, 0)
 
-    def is_connected_to_output(self, channel, cc):
+    def is_connected_to_output(self, ID):
+        channel, cc = ID2ccc(ID)
         return channel == self.channel and cc == self.cc
 
 

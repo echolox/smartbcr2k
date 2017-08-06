@@ -420,27 +420,28 @@ class OutputPort(Port):
 
         else:  # TODO: Filter for Note events
             try:
-                channel, cc, value = message
+                channel_byte, cc, value = message
+                channel = (channel_byte - CONTROL_CHANGE) + 1
                 ID = ccc2ID(channel, cc)
 
-                worth_reporting = False
+                worth_reporting = True
                 try:
-                    if value != self.last_sent_values[ID]:
-                        worth_reporting = True
+                    if value == self.last_sent_values[ID]:
+                        worth_reporting = False
                 except KeyError:
                     pass
 
                 if worth_reporting:
-                    self.received(channel, cc, value)
+                    self.received(ID, value)
             except Exception as e:
                 eprint(self, e)
 
-    def received(self, channel, cc, value):
+    def received(self, ID, value):
         """
         Inform the observers that a control value has changed by issuing
         an OutputEvent.CC.
         """
-        self.inform_listeners(OutputEvent.CC, self, channel, cc, value)
+        self.inform_listeners(OutputEvent.CC, self, ID, value)
 
     def inform_listeners(self, *data):
         for listener in self.listener_qs:

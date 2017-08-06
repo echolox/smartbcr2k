@@ -466,6 +466,9 @@ def create(interface):
         i.views.append(view)
     # END PER TRACK VIEW
 
+    views_midi[5].configuration[bcr.menu_rows(1)[0].ID]["toggle"] = False
+    views_midi[5].configuration[bcr.menu_rows(1)[1].ID]["toggle"] = False
+
 
     # More stuff on the midi init view
     for index in range(8):

@@ -31,7 +31,7 @@ The SMCI is dependent some kind of virtual midi cable running on your computer (
 
 ## Installation
 
-You will need **Python 3.5+** and install the packages listed in `reqs.txt` by using `pip install reqs.txt`. It is advisable to create a virtualenvironment for this.
+You will need **Python 3.5+** and install the packages listed in `reqs.txt` by using `pip install -r reqs.txt`. It is advisable to create a virtualenvironment for this.
 
 Apart from that you will need some software that provides you with virtual midi cables:
 - **[Win]** [loopMidi](https://www.tobias-erichsen.de/software/loopmidi.html) (free for private, non-commercial use)
